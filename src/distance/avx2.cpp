@@ -12,10 +12,10 @@ namespace {
 inline float hsum(__m256 v) {
   __m128 lo = _mm256_castps256_ps128(v);
   const __m128 hi = _mm256_extractf128_ps(v, 1);
-  lo = _mm_add_ps(lo, hi);                         // 4 lanes
-  __m128 shuf = _mm_movehdup_ps(lo);               // (1,1,3,3)
-  __m128 sums = _mm_add_ps(lo, shuf);              // (0+1, _, 2+3, _)
-  shuf = _mm_movehl_ps(shuf, sums);                // (2+3, ...)
+  lo = _mm_add_ps(lo, hi);             // 4 lanes
+  __m128 shuf = _mm_movehdup_ps(lo);   // (1,1,3,3)
+  __m128 sums = _mm_add_ps(lo, shuf);  // (0+1, _, 2+3, _)
+  shuf = _mm_movehl_ps(shuf, sums);    // (2+3, ...)
   sums = _mm_add_ss(sums, shuf);
   return _mm_cvtss_f32(sums);
 }

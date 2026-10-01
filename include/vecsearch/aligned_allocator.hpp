@@ -43,6 +43,8 @@ using AlignedVector = std::vector<T, AlignedAllocator<T>>;
 
 // Row stride (in floats) used to store a `dim`-dimensional vector: rounded up to 16 floats
 // (64 bytes) so consecutive rows stay cache-line aligned. Padding floats are always zero.
-inline constexpr std::size_t padded_dim(std::size_t dim) { return (dim + 15) / 16 * 16; }
+inline constexpr std::size_t padded_dim(std::size_t dim) {
+  return (dim + 15) / 16 * 16;
+}
 
 }  // namespace vecsearch

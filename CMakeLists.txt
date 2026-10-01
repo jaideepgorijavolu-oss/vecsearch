@@ -40,6 +40,7 @@ add_library(vecsearch STATIC
   src/distance/scalar.cpp
   src/distance/dispatch.cpp
   src/index/flat_index.cpp
+  src/index/hnsw_index.cpp
 )
 target_include_directories(vecsearch PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_link_libraries(vecsearch PUBLIC Threads::Threads)
@@ -77,6 +78,7 @@ if(VECSEARCH_BUILD_BENCH)
   set(BENCHMARK_ENABLE_GTEST_TESTS OFF CACHE BOOL "" FORCE)
   FetchContent_MakeAvailable(benchmark)
   add_subdirectory(bench/micro)
+  add_subdirectory(bench/ann)
 endif()
 
 if(VECSEARCH_BUILD_PYTHON)

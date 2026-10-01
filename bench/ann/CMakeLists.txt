@@ -1,0 +1,5 @@
+add_executable(hnsw_eval hnsw_eval.cpp)
+target_link_libraries(hnsw_eval PRIVATE vecsearch)
+
+add_executable(parallel_build_quality parallel_build_quality.cpp)
+target_link_libraries(parallel_build_quality PRIVATE vecsearch)

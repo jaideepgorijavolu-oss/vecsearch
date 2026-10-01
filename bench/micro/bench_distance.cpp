@@ -76,9 +76,8 @@ void register_all() {
     for (auto [metric, fn] : {std::pair{"l2", e.l2}, std::pair{"dot", e.ip}}) {
       for (const char* mode : {"hot", "scan"}) {
         const std::string name = std::string(mode) + "/" + metric + "/" + e.name;
-        auto* b = std::string(mode) == "hot"
-                      ? benchmark::RegisterBenchmark(name, hot, fn)
-                      : benchmark::RegisterBenchmark(name, scan, fn);
+        auto* b = std::string(mode) == "hot" ? benchmark::RegisterBenchmark(name, hot, fn)
+                                             : benchmark::RegisterBenchmark(name, scan, fn);
         for (int d : {32, 64, 128, 384, 768, 1536}) b->Arg(d);
       }
     }

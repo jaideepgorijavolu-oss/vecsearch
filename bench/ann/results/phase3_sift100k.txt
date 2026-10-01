@@ -1,0 +1,12 @@
+base 100000 x 128, queries 10000, metric l2, M 16, ef_construction 200, threads 16, kernels avx2
+ground truth (FlatIndex): 4.65 s
+build: 3.34 s, max level 3, memory 69.6 MiB
+      ef  recall@10   QPS(1 thr)     QPS(all)
+      10     0.7799        26049       151955
+      20     0.8944        15551        78819
+      40     0.9632         8963        82098
+      60     0.9829         7741        33339
+      80     0.9904         6279        25987
+     120     0.9957         4773        24231
+     160     0.9973         3637        20695
+save -> load -> search: identical

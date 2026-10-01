@@ -64,8 +64,8 @@ inline void check_header(std::ifstream& in, const char (&magic)[9], std::uint32_
     throw std::runtime_error("not a vecsearch index file of this type (bad magic)");
   const auto v = read_pod<std::uint32_t>(in);
   if (v != version)
-    throw std::runtime_error("unsupported index file version " + std::to_string(v) +
-                             " (expected " + std::to_string(version) + ")");
+    throw std::runtime_error("unsupported index file version " + std::to_string(v) + " (expected " +
+                             std::to_string(version) + ")");
 }
 
 }  // namespace vecsearch::io

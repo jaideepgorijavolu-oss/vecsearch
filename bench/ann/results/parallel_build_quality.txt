@@ -1,0 +1,7 @@
+n 100000, dim 16, M 16, ef_construction 200, self-hits at ef 50 (of 2000)
+ threads  sequential_prefix       first 2000        last 2000
+       1                  1             1999             2000
+       8                  1             1978             2000
+       8               1000             1997             2000
+      16                  1             1973             2000
+      16               1000             1995             2000

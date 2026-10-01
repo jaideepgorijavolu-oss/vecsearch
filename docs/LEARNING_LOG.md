@@ -135,3 +135,50 @@ memory-bound, not compute-bound.
    it? What would AVX-512 change in that regime?
 5. Your SIMD result differs from scalar in the last bits. Why, and why is 1e-4 relative error
    an acceptable tolerance for nearest-neighbor search?
+
+## Phase 3: HNSW index
+
+**What was built** (`include/vecsearch/hnsw_index.hpp`, `src/index/hnsw_index.cpp`)
+
+- HNSW following Malkov & Yashunin (2018): random levels with `mL = 1/ln(M)`, greedy descent
+  through the upper layers, beam search (`search_layer`, Algorithm 2) on the target layer,
+  neighbor selection heuristic (Algorithm 4) when linking and when pruning a full neighbor
+  list. `M0 = 2M` links on layer 0.
+- Compact storage: fixed-size layer-0 neighbor blocks in one array (`[count, ids...]`), small
+  per-node arrays for the few nodes on upper layers.
+- `VisitedList` with an epoch counter (no per-query clearing).
+- Parallel batch search (per-thread `Scratch` buffers from a pool) and parallel construction
+  (per-node 1-byte spinlocks, global lock only for the entry point).
+- Soft deletion (tombstones), upsert by label, filtered search via an `accept` predicate,
+  save/load with a versioned header and validation.
+- Tools: `hnsw_eval` (recall/QPS sweep with exact ground truth) and `parallel_build_quality`.
+
+**Design decisions**
+
+- *Two heaps in search_layer.* Candidates (min-heap: what to expand next) and results
+  (max-heap: the worst kept result is the stopping bound). Stop when the closest candidate is
+  worse than the worst result: nothing left can improve the beam.
+- *Why the heuristic matters.* "Closest M" on clustered data links every node only inside its
+  own cluster, and the graph falls apart into islands. The heuristic skips a candidate that is
+  closer to an already-chosen neighbor than to the base node, so it spends links on new
+  directions. Measured: recall 0.28 → 0.61 on clustered data at the same ef.
+- *Tombstones and filters share one mechanism*: rejected nodes are expanded (they keep the
+  graph connected) but never enter the results heap.
+- *Copy neighbors under the lock, compute outside it.* Keeps lock hold times tiny.
+- *Never hold two node locks.* Deadlock-free by construction, no lock ordering needed.
+- *Sequential prefix.* Found by measuring: with 16 threads, nodes inserted while the graph was
+  tiny ended up badly linked. Inserting the first 1,000 nodes on one thread fixes most of it at
+  no measurable cost.
+- *Levels drawn before the parallel phase.* Deterministic for a given seed, and a node's level
+  and storage never change while other threads might read them.
+
+**Interview questions**
+
+1. Walk through `search_layer`. Why two heaps, and what is the exact stopping condition? What
+   changes when some nodes are filtered out?
+2. Why `mL = 1/ln(M)`? What is the expected number of layers for n = 1M and M = 16?
+3. Explain Algorithm 4 with a picture. When does it help, and when is it no better than
+   closest-M?
+4. How does parallel construction avoid deadlocks and data races? What would break if you
+   read a neighbor list without the lock during construction?
+5. Why does deleting nodes by tombstone hurt search over time, and what would you do about it?

@@ -113,7 +113,39 @@ Two scenarios:
 
 ## Phase 3: HNSW correctness
 
-TBD
+Command (after `python3 bench/ann/make_subset.py data/sift-128-euclidean.hdf5 100000 data/sift100k`):
+
+```bash
+./build/bench/bench/ann/hnsw_eval data/sift100k.base.fbin data/sift100k.query.fbin l2 16 200 0 10,20,40,60,80,120,160
+```
+
+Random 100k subset of SIFT1M (seed 0), all 10k queries, ground truth recomputed exactly with
+`FlatIndex` on the subset. M = 16, ef_construction = 200, 16 build threads. Raw output:
+`bench/ann/results/phase3_sift100k.txt`.
+
+| ef_search | recall@10 |
+|---:|---:|
+| 10 | 0.7799 |
+| 20 | 0.8944 |
+| 40 | 0.9632 |
+| 60 | 0.9829 |
+| 80 | 0.9904 |
+| 120 | 0.9957 |
+| 160 | 0.9973 |
+
+Build: 3.34 s on 16 threads. Acceptance (recall@10 ≥ 0.95 at a reasonable ef) is met at
+ef = 40. Save → load → search returns identical ids and distances. The tool also prints QPS,
+but those are single 10k-query runs; proper throughput measurements are in Phase 4.
+
+Other correctness results (from the unit tests and tools, see DESIGN.md):
+
+- Neighbor-selection heuristic vs closest-M (`Hnsw.HeuristicBeatsClosestM`, 20k points in 100
+  tight clusters, dim 8, M = 6, ef = 20): recall@10 0.28 vs 0.61.
+- Parallel build quality (`bench/ann/parallel_build_quality`, output in
+  `bench/ann/results/parallel_build_quality.txt`): the sequential first 1,000 inserts recover
+  almost all of the quality lost by a 16-thread build on the earliest nodes.
+- ASan + UBSan (`ctest --preset sanitizer`) and TSan (`ctest --preset tsan`) run the full suite,
+  including 4- and 8-thread builds and parallel searches, with no reports.
 
 ## Phase 4: ANN benchmarks
 
