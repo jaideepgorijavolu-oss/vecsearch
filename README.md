@@ -6,7 +6,21 @@ search, soft deletes and filtered search, zero-copy Python bindings, and a small
 service. It is benchmarked against hnswlib and Faiss on SIFT1M and GloVe-100 with
 recall-vs-throughput curves.
 
-Results: TBD (Phase 4).
+![SIFT1M recall vs QPS](bench/ann/results/sift_recall_qps.png)
+
+Headline numbers (SIFT1M, M = 16, ef_construction = 200, recall@10 ≈ 0.96, laptop Ryzen 9 270
+in Eco power mode; full methodology and caveats in [docs/RESULTS.md](docs/RESULTS.md)):
+
+| | vecsearch | hnswlib | Faiss HNSW |
+|---|---:|---:|---:|
+| QPS, 1 thread | **5,834** | 5,188 | 4,740 |
+| QPS, 16 threads | 35,437 | 32,252 | **39,998** |
+| p99 latency (ms) | **0.32** | 0.45 | 0.39 |
+| build (s) | **64.5** | 75.0 | 75.4 |
+
+vecsearch is fastest on one thread on both SIFT1M and GloVe-100, thanks to a batched
+software-prefetching search loop found by profiling (+21% QPS). Faiss scales better across 16
+threads; RESULTS.md discusses why that is not yet explained.
 
 ## Quickstart
 

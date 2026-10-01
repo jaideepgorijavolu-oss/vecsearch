@@ -1,0 +1,113 @@
+{
+ "dataset": "sift",
+ "engine": "hnswlib",
+ "metric": "l2",
+ "n": 1000000,
+ "dim": 128,
+ "queries": 10000,
+ "M": 16,
+ "ef_construction": 200,
+ "threads": 16,
+ "build_seconds": 74.99479357199925,
+ "rss_growth_bytes": 789135360,
+ "reported_memory_bytes": null,
+ "sweep": [
+  {
+   "ef": 10,
+   "recall": 0.70889,
+   "recall_1thread": 0.70889,
+   "qps_all_threads": 116572.9542506563,
+   "qps_1thread": 18800.357179737308
+  },
+  {
+   "ef": 16,
+   "recall": 0.80232,
+   "recall_1thread": 0.80232,
+   "qps_all_threads": 87109.51862530914,
+   "qps_1thread": 13418.927447085925
+  },
+  {
+   "ef": 24,
+   "recall": 0.86517,
+   "recall_1thread": 0.86517,
+   "qps_all_threads": 66499.43344815866,
+   "qps_1thread": 10823.878614032059
+  },
+  {
+   "ef": 32,
+   "recall": 0.90312,
+   "recall_1thread": 0.90312,
+   "qps_all_threads": 54773.435326440886,
+   "qps_1thread": 9128.64672560268
+  },
+  {
+   "ef": 48,
+   "recall": 0.94321,
+   "recall_1thread": 0.94321,
+   "qps_all_threads": 40597.18211298135,
+   "qps_1thread": 6633.8050299279475
+  },
+  {
+   "ef": 64,
+   "recall": 0.96356,
+   "recall_1thread": 0.96356,
+   "qps_all_threads": 32251.50684849827,
+   "qps_1thread": 5187.54039884581
+  },
+  {
+   "ef": 96,
+   "recall": 0.9815,
+   "recall_1thread": 0.9815,
+   "qps_all_threads": 22980.603589222614,
+   "qps_1thread": 3754.5625899829
+  },
+  {
+   "ef": 128,
+   "recall": 0.98937,
+   "recall_1thread": 0.98937,
+   "qps_all_threads": 18161.05352662033,
+   "qps_1thread": 2955.1692246800276
+  },
+  {
+   "ef": 192,
+   "recall": 0.99534,
+   "recall_1thread": 0.99534,
+   "qps_all_threads": 12834.221167326374,
+   "qps_1thread": 2096.0396136794247
+  },
+  {
+   "ef": 256,
+   "recall": 0.99732,
+   "recall_1thread": 0.99732,
+   "qps_all_threads": 9773.99961868178,
+   "qps_1thread": 1638.4060650532133
+  },
+  {
+   "ef": 384,
+   "recall": 0.9986,
+   "recall_1thread": 0.9986,
+   "qps_all_threads": 6819.747804320997,
+   "qps_1thread": 1154.936468287579
+  },
+  {
+   "ef": 512,
+   "recall": 0.99915,
+   "recall_1thread": 0.99915,
+   "qps_all_threads": 5229.085107372721,
+   "qps_1thread": 895.956303950179
+  }
+ ],
+ "latency": {
+  "ef": 64,
+  "recall": 0.96356,
+  "p50_ms": 0.204453,
+  "p99_ms": 0.45263033999999985,
+  "mean_ms": 0.218396973,
+  "queries": 2000
+ },
+ "machine": {
+  "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+  "cpu_count": 16,
+  "python": "3.12.3"
+ }
+}

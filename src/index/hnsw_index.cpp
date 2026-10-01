@@ -212,6 +212,14 @@ std::uint32_t HnswIndex::greedy_descent(const float* q, std::uint32_t ep, int to
   return cur;
 }
 
+void HnswIndex::prefetch_address(const void* p) {
+#if defined(__GNUC__) || defined(__clang__)
+  __builtin_prefetch(p);
+#else
+  (void)p;
+#endif
+}
+
 void HnswIndex::prefetch_vector(std::uint32_t id) const {
 #if defined(__GNUC__) || defined(__clang__)
   const char* p = reinterpret_cast<const char*>(vec(id));
@@ -244,6 +252,8 @@ void HnswIndex::search_layer(const float* q, std::uint32_t ep, std::size_t ef, i
     if (c.dist > bound && results.size() >= ef) break;
     std::pop_heap(candidates.begin(), candidates.end(), std::greater<>{});
     candidates.pop_back();
+    // The new heap top is most likely the next node we expand: start loading its neighbor block.
+    if (prefetch_ && !candidates.empty()) prefetch_address(links(candidates.front().id, level));
 
     const std::uint32_t* nb;
     std::size_t n;
@@ -260,12 +270,25 @@ void HnswIndex::search_layer(const float* q, std::uint32_t ep, std::size_t ef, i
       n = block[0];
     }
 
-    if (prefetch_ && n > 0) prefetch_vector(nb[0]);
+    // Each neighbor costs two likely cache misses: its visited mark (a random spot in an array
+    // as large as the index) and its vector (random, 512 bytes for SIFT). Done naively, they
+    // are taken one neighbor at a time, each waiting ~100 ns for DRAM. With prefetching we issue
+    // all the visited-mark loads, then all the vector loads for unvisited neighbors, and only
+    // then compute distances, so the misses overlap (memory-level parallelism).
+    // See RESULTS.md, Phase 4, for the profile that motivated this.
+    if (prefetch_) {
+      for (std::size_t j = 0; j < n; ++j) prefetch_address(s.visited.address(nb[j]));
+    }
+    auto& todo = s.unvisited;
+    todo.clear();
     for (std::size_t j = 0; j < n; ++j) {
-      const std::uint32_t id = nb[j];
-      // Start loading the next neighbor's vector while we compute this one's distance.
-      if (prefetch_ && j + 1 < n) prefetch_vector(nb[j + 1]);
-      if (s.visited.test_and_set(id)) continue;
+      if (!s.visited.test_and_set(nb[j])) todo.push_back(nb[j]);
+    }
+    if (prefetch_) {
+      for (const std::uint32_t id : todo) prefetch_vector(id);
+    }
+
+    for (const std::uint32_t id : todo) {
       const float d = dist(q, id);
       if (results.size() < ef || d < bound) {
         candidates.push_back({d, id});

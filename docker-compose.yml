@@ -1,0 +1,9 @@
+services:
+  vecsearch:
+    build:
+      context: .
+      dockerfile: service/Dockerfile
+    image: vecsearch-service
+    ports:
+      - "8000:8000"
+    restart: unless-stopped

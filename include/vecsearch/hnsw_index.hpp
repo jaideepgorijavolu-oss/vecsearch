@@ -85,7 +85,8 @@ class HnswIndex {
     std::vector<Cand> candidates;  // min-heap (closest on top) of nodes to expand
     std::vector<Cand> results;     // max-heap (furthest on top) of the best ef found
     std::vector<std::uint32_t> neighbor_copy;
-    std::vector<float> query;  // normalized query copy (cosine)
+    std::vector<std::uint32_t> unvisited;  // neighbors of the node being expanded, not yet seen
+    std::vector<float> query;              // normalized query copy (cosine)
   };
   class ScratchPool;
 
@@ -121,6 +122,7 @@ class HnswIndex {
   // Links id to the best of `candidates` (sorted closest first) on `level`, and back.
   void connect(std::uint32_t id, std::vector<Cand>& candidates, int level, Scratch& s);
   void prefetch_vector(std::uint32_t id) const;
+  static void prefetch_address(const void* p);
 
   std::size_t dim_;
   std::size_t stride_;
@@ -130,7 +132,7 @@ class HnswIndex {
   std::size_t M0_;
   double level_mult_;  // mL = 1 / ln(M)
   std::atomic<std::size_t> ef_search_;
-  bool prefetch_ = false;
+  bool prefetch_ = true;
 
   std::size_t count_ = 0;     // nodes [0, count_) exist
   std::size_t capacity_ = 0;  // storage allocated for this many nodes

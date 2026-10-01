@@ -1,0 +1,155 @@
+== build
+ninja: no work to do.
+== Phase 2: distance kernel microbenchmarks
+2026-10-01T03:37:02+00:00
+Running ./build/bench/bench/micro/bench_distance
+Run on (16 X 3992.51 MHz CPU s)
+CPU Caches:
+  L1 Data 32 KiB (x8)
+  L1 Instruction 32 KiB (x8)
+  L2 Unified 1024 KiB (x8)
+  L3 Unified 16384 KiB (x1)
+Load Average: 0.83, 3.87, 5.44
+== Phase 4: datasets
+== Phase 4: recall / QPS sweeps (one process per engine and dataset)
+[sift/vecsearch] build 64.5 s, RSS +726 MiB
+  ef   10  recall 0.7077  QPS all    125418  1-thread    19840
+  ef   16  recall 0.8009  QPS all     97506  1-thread    15402
+  ef   24  recall 0.8665  QPS all     74268  1-thread    11887
+  ef   32  recall 0.9034  QPS all     60654  1-thread     9528
+  ef   48  recall 0.9435  QPS all     44511  1-thread     7373
+  ef   64  recall 0.9635  QPS all     35437  1-thread     5834
+  ef   96  recall 0.9810  QPS all     25470  1-thread     4133
+  ef  128  recall 0.9889  QPS all     19234  1-thread     3236
+  ef  192  recall 0.9947  QPS all     14180  1-thread     2286
+  ef  256  recall 0.9969  QPS all     11004  1-thread     1811
+  ef  384  recall 0.9984  QPS all      7851  1-thread     1247
+  ef  512  recall 0.9988  QPS all      6180  1-thread      988
+  latency at ef 64: p50 0.179 ms, p99 0.316 ms
+wrote /work/bench/ann/results/sift_vecsearch.json
+[sift/vecsearch-noprefetch] build 69.5 s, RSS +726 MiB
+  ef   10  recall 0.7077  QPS all    122252  1-thread    17982
+  ef   16  recall 0.8005  QPS all     89989  1-thread    12579
+  ef   24  recall 0.8657  QPS all     68173  1-thread    10148
+  ef   32  recall 0.9029  QPS all     55941  1-thread     8317
+  ef   48  recall 0.9434  QPS all     41171  1-thread     6168
+  ef   64  recall 0.9630  QPS all     32762  1-thread     4833
+  ef   96  recall 0.9811  QPS all     23534  1-thread     3320
+  ef  128  recall 0.9890  QPS all     18301  1-thread     2616
+  ef  192  recall 0.9948  QPS all     12772  1-thread     1817
+  ef  256  recall 0.9970  QPS all     10129  1-thread     1389
+  ef  384  recall 0.9983  QPS all      7192  1-thread      991
+  ef  512  recall 0.9987  QPS all      5356  1-thread      775
+  latency at ef 64: p50 0.214 ms, p99 0.391 ms
+wrote /work/bench/ann/results/sift_vecsearch-noprefetch.json
+[sift/hnswlib] build 75.0 s, RSS +753 MiB
+  ef   10  recall 0.7089  QPS all    116573  1-thread    18800
+  ef   16  recall 0.8023  QPS all     87110  1-thread    13419
+  ef   24  recall 0.8652  QPS all     66499  1-thread    10824
+  ef   32  recall 0.9031  QPS all     54773  1-thread     9129
+  ef   48  recall 0.9432  QPS all     40597  1-thread     6634
+  ef   64  recall 0.9636  QPS all     32252  1-thread     5188
+  ef   96  recall 0.9815  QPS all     22981  1-thread     3755
+  ef  128  recall 0.9894  QPS all     18161  1-thread     2955
+  ef  192  recall 0.9953  QPS all     12834  1-thread     2096
+  ef  256  recall 0.9973  QPS all      9774  1-thread     1638
+  ef  384  recall 0.9986  QPS all      6820  1-thread     1155
+  ef  512  recall 0.9991  QPS all      5229  1-thread      896
+  latency at ef 64: p50 0.204 ms, p99 0.453 ms
+wrote /work/bench/ann/results/sift_hnswlib.json
+[sift/faiss] build 75.4 s, RSS +679 MiB
+  ef   10  recall 0.7157  QPS all    151170  1-thread    18030
+  ef   16  recall 0.8075  QPS all    111680  1-thread    13440
+  ef   24  recall 0.8735  QPS all     84662  1-thread    10355
+  ef   32  recall 0.9108  QPS all     67588  1-thread     8112
+  ef   48  recall 0.9485  QPS all     47616  1-thread     5962
+  ef   64  recall 0.9675  QPS all     39998  1-thread     4740
+  ef   96  recall 0.9835  QPS all     28739  1-thread     3184
+  ef  128  recall 0.9904  QPS all     21606  1-thread     2538
+  ef  192  recall 0.9954  QPS all     15302  1-thread     1796
+  ef  256  recall 0.9973  QPS all     11623  1-thread     1389
+  ef  384  recall 0.9987  QPS all      8225  1-thread      956
+  ef  512  recall 0.9990  QPS all      5679  1-thread      737
+  latency at ef 64: p50 0.237 ms, p99 0.393 ms
+wrote /work/bench/ann/results/sift_faiss.json
+[glove/vecsearch] build 88.5 s, RSS +784 MiB
+  ef   10  recall 0.4752  QPS all    118149  1-thread    18786
+  ef   16  recall 0.5586  QPS all     88301  1-thread    13755
+  ef   24  recall 0.6266  QPS all     66865  1-thread    10296
+  ef   32  recall 0.6704  QPS all     52404  1-thread     8330
+  ef   48  recall 0.7271  QPS all     40128  1-thread     6239
+  ef   64  recall 0.7620  QPS all     32662  1-thread     5011
+  ef   96  recall 0.8046  QPS all     23608  1-thread     3669
+  ef  128  recall 0.8308  QPS all     18341  1-thread     2852
+  ef  192  recall 0.8642  QPS all     13308  1-thread     2005
+  ef  256  recall 0.8849  QPS all     10139  1-thread     1549
+  ef  384  recall 0.9099  QPS all      7215  1-thread     1108
+  ef  512  recall 0.9257  QPS all      5681  1-thread      832
+  ef  768  recall 0.9445  QPS all      3798  1-thread      546
+  ef 1024  recall 0.9559  QPS all      2784  1-thread      415
+  ef 1536  recall 0.9692  QPS all      1918  1-thread      287
+  latency at ef 1024: p50 2.452 ms, p99 3.772 ms
+wrote /work/bench/ann/results/glove_vecsearch.json
+[glove/vecsearch-noprefetch] build 100.7 s, RSS +785 MiB
+  ef   10  recall 0.4744  QPS all    109123  1-thread    15577
+  ef   16  recall 0.5585  QPS all     76899  1-thread    10980
+  ef   24  recall 0.6265  QPS all     62441  1-thread     8437
+  ef   32  recall 0.6706  QPS all     46443  1-thread     6720
+  ef   48  recall 0.7284  QPS all     37196  1-thread     4808
+  ef   64  recall 0.7626  QPS all     29704  1-thread     3852
+  ef   96  recall 0.8052  QPS all     21523  1-thread     2796
+  ef  128  recall 0.8314  QPS all     16731  1-thread     2170
+  ef  192  recall 0.8642  QPS all     11472  1-thread     1533
+  ef  256  recall 0.8843  QPS all      9225  1-thread     1187
+  ef  384  recall 0.9095  QPS all      6347  1-thread      843
+  ef  512  recall 0.9255  QPS all      4858  1-thread      608
+  ef  768  recall 0.9440  QPS all      3387  1-thread      435
+  ef 1024  recall 0.9556  QPS all      2597  1-thread      332
+  ef 1536  recall 0.9694  QPS all      1796  1-thread      230
+  latency at ef 1024: p50 3.095 ms, p99 5.067 ms
+wrote /work/bench/ann/results/glove_vecsearch-noprefetch.json
+[glove/hnswlib] build 106.9 s, RSS +761 MiB
+  ef   10  recall 0.4716  QPS all    103806  1-thread    16612
+  ef   16  recall 0.5572  QPS all     75949  1-thread    11930
+  ef   24  recall 0.6269  QPS all     55497  1-thread     8625
+  ef   32  recall 0.6713  QPS all     49029  1-thread     7144
+  ef   48  recall 0.7288  QPS all     36482  1-thread     5376
+  ef   64  recall 0.7629  QPS all     29091  1-thread     4282
+  ef   96  recall 0.8054  QPS all     21062  1-thread     3041
+  ef  128  recall 0.8316  QPS all     16655  1-thread     2441
+  ef  192  recall 0.8640  QPS all     11323  1-thread     1723
+  ef  256  recall 0.8846  QPS all      8960  1-thread     1348
+  ef  384  recall 0.9095  QPS all      6019  1-thread      923
+  ef  512  recall 0.9258  QPS all      4903  1-thread      699
+  ef  768  recall 0.9444  QPS all      3362  1-thread      477
+  ef 1024  recall 0.9557  QPS all      2519  1-thread      352
+  ef 1536  recall 0.9694  QPS all      1703  1-thread      240
+  latency at ef 1024: p50 3.046 ms, p99 7.176 ms
+wrote /work/bench/ann/results/glove_hnswlib.json
+[glove/faiss] build 102.5 s, RSS +677 MiB
+  ef   10  recall 0.4758  QPS all    128152  1-thread    13298
+  ef   16  recall 0.5629  QPS all     92992  1-thread     9367
+  ef   24  recall 0.6313  QPS all     73652  1-thread     7275
+  ef   32  recall 0.6755  QPS all     46871  1-thread     6032
+  ef   48  recall 0.7315  QPS all     42960  1-thread     4325
+  ef   64  recall 0.7639  QPS all     35476  1-thread     3434
+  ef   96  recall 0.8064  QPS all     25398  1-thread     2673
+  ef  128  recall 0.8322  QPS all     20235  1-thread     2130
+  ef  192  recall 0.8628  QPS all     13833  1-thread     1478
+  ef  256  recall 0.8827  QPS all     10903  1-thread     1197
+  ef  384  recall 0.9067  QPS all      7390  1-thread      818
+  ef  512  recall 0.9212  QPS all      5596  1-thread      613
+  ef  768  recall 0.9399  QPS all      3671  1-thread      409
+  ef 1024  recall 0.9514  QPS all      2593  1-thread      308
+  ef 1536  recall 0.9648  QPS all      1547  1-thread      191
+  latency at ef 1024: p50 3.424 ms, p99 6.994 ms
+wrote /work/bench/ann/results/glove_faiss.json
+== Phase 4: profile (perf stat)
+/data/sift1m: base 1000000x128, queries 10000
+SIFT1M, M=16, ef_construction=200, ef_search=64, 1 thread, 20 s loop
+
+| prefetch | QPS | cycles/query | instructions/query | IPC | L1d misses/query | cache misses/query (LLC) | branch misses/query |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| off | 4780 | 738142 | 233448 | 0.32 | 15491 | 13462 | 1875 |
+| on | 4805 | 559941 | 306559 | 0.55 | 16497 | 14095 | 2031 |
+done: see bench/ann/results/

@@ -70,3 +70,17 @@ jobs:
         run: cd /tmp && python -m pytest -q "$GITHUB_WORKSPACE/tests/python"
       - name: README example
         run: cd /tmp && python "$GITHUB_WORKSPACE/tools/run_readme_example.py"
+
+  service:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: pip install . -r service/requirements.txt httpx pytest
+      - name: API tests (FastAPI TestClient)
+        run: cd service && python -m pytest -q tests
+      - name: Docker image builds
+        run: docker build -f service/Dockerfile -t vecsearch-service .

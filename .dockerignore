@@ -1,0 +1,10 @@
+.git
+build
+data
+_skbuild
+**/__pycache__
+bench
+docs
+tests
+service/tests
+service/loadtest

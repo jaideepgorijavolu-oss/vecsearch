@@ -224,3 +224,41 @@ That needs the bindings, so Phase 5 was done first.
 3. Why reject float64 input instead of converting it?
 4. How does the capsule keep the result memory alive, and when is it freed?
 5. How does scikit-build-core turn a CMake project into a wheel?
+
+## Phase 4: Benchmarks and profiling
+
+**What was built**
+
+- `bench/ann/run.py` + `engines.py`: one harness for vecsearch, hnswlib and Faiss with identical
+  parameters (M = 16, ef_construction = 200, 16 threads), one process per (dataset, engine) so
+  RSS measurements do not mix. ef sweep → recall@10, QPS (16 threads and 1 thread), build time,
+  memory, p50/p99 single-query latency at recall ≈ 0.95.
+- `bench/ann/plot.py`: recall-vs-QPS plots and the tables in RESULTS.md.
+- `bench/ann/profile_search.cpp` + `profile.py`: a single-threaded search loop under
+  `perf stat`, with a load-only baseline subtracted, giving counters *per query*.
+- `make bench` / `bench/run_all.sh` regenerates every Phase 2 and Phase 4 number.
+
+**What the profile showed and what changed**
+
+- IPC 0.3 and ~13.5k LLC misses per query: the search is DRAM-latency bound. `perf annotate`
+  put the stalls on the first load of each vector and on the visited-list load.
+- Fix: process a neighbor list in passes (prefetch all visited marks; collect unvisited and
+  prefetch their vectors; then compute), plus prefetch the next candidate's neighbor block. The
+  number of misses is the same, but they overlap: cycles/query −24%, QPS +21% (SIFT, 1 thread).
+- Prefetching only the *next* neighbor (hnswlib's approach) gained just ~5%: one distance
+  computation (~20 ns) cannot hide a ~100 ns miss.
+
+**Honest results:** fastest single-thread on both datasets, fastest build; Faiss is ~11% ahead
+with 16 threads on SIFT and the cause is not yet measured. Laptop in Eco mode; one run per
+configuration with ~±5–10% noise.
+
+**Interview questions**
+
+1. What does IPC 0.3 tell you, and which counters would you look at next?
+2. Explain memory-level parallelism. Why does prefetching a whole neighbor list beat
+   prefetching one neighbor ahead?
+3. The prefetch didn't reduce cache misses. How can it still make the search 21% faster?
+4. Why does the gain shrink from +21% on 1 thread to +8% on 16 threads? How would you test
+   your hypothesis?
+5. How do you make sure a benchmark against hnswlib/Faiss is fair (parameters, threads, recall
+   at equal ef vs equal QPS, process isolation, noise)?
