@@ -84,3 +84,54 @@ One entry per phase: the key ideas, the design decisions, and questions an inter
    zero vector?
 5. Your parallel brute-force search writes into one shared result array from many threads.
    Why is that not a data race?
+
+## Phase 2: SIMD kernels
+
+**What was built**
+
+- `src/distance/avx2.cpp`: AVX2 + FMA `l2_sq` and `dot`. Main loop of 32 floats with four
+  independent 8-lane accumulators, then an 8-wide loop, then a scalar tail; horizontal sum at
+  the end. Only this file is compiled with `-mavx2 -mfma`.
+- `src/distance/neon.cpp`: the same structure with 4-lane NEON registers (`vfmaq_f32`,
+  `vaddvq_f32`), built on ARM (tested by the macOS CI runner).
+- `src/distance/dispatch.cpp`: `active_kernels()` runs `__builtin_cpu_supports("avx2")` and
+  `("fma")` once (a function-local static, so initialization is thread-safe) and returns a
+  `Kernels` struct of function pointers. `VECSEARCH_KERNELS=scalar` forces the fallback.
+- Tests: every supported kernel against scalar for every dim 1..200 plus 384/768/1536/1537,
+  from deliberately misaligned pointers, within 1e-4 relative error.
+- `bench/micro/bench_distance`: Google Benchmark, scalar vs `-O3 -march=native` vs
+  `-O3 -march=native -ffast-math` vs hand SIMD, hot (L1) and scan (DRAM) scenarios.
+
+**Design decisions**
+
+- *Per-file target flags, not `-mavx2` globally.* If the whole library were built with AVX2,
+  the compiler could emit AVX2 instructions anywhere (including in code that runs before
+  dispatch) and the binary would crash with SIGILL on a CPU without AVX2.
+- *Function pointers chosen once.* The feature check costs a few instructions but is done at
+  most once. The indirect call per distance costs ~1 ns and is predicted perfectly (always the
+  same target). The alternative, templating the whole index on the kernel, removes the
+  indirect call but multiplies compile time and code size.
+- *Four accumulators.* An FMA has a latency of ~4 cycles but two can start per cycle, so a
+  single accumulator chain uses 1/8 of the available FMA throughput. Four chains is a common
+  sweet spot that also keeps register pressure low.
+- *Scalar tail instead of masked loads.* Simple and obviously correct; for dims like 128 the
+  tail never runs. AVX2 masked loads (`_mm256_maskload_ps`) are an option for odd dims.
+- *Unaligned loads (`loadu`).* Queries come from users (NumPy arrays) and may not be aligned;
+  on modern x86 `loadu` on aligned data is as fast as `load`.
+
+**What the measurements showed** (see RESULTS.md): the compiler does not vectorize the plain
+loop at all without `-ffast-math`; with it, it gets within 8–35% using a single accumulator.
+Once vectors come from DRAM, all vectorized kernels run at the same ~30 GB/s: the kernel is
+memory-bound, not compute-bound.
+
+**Interview questions**
+
+1. Why can't the compiler vectorize `sum += a[i] * b[i]` without `-ffast-math`? What exactly
+   does `-fassociative-math` allow?
+2. Why does the hand kernel use four accumulators? How would you pick the number?
+3. How does runtime dispatch avoid SIGILL on old CPUs? What has to be true about the files
+   that are *not* compiled with `-mavx2`?
+4. At what point does a distance kernel become memory-bandwidth bound, and how did you show
+   it? What would AVX-512 change in that regime?
+5. Your SIMD result differs from scalar in the last bits. Why, and why is 1e-4 relative error
+   an acceptable tolerance for nearest-neighbor search?

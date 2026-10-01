@@ -44,6 +44,19 @@ add_library(vecsearch STATIC
 target_include_directories(vecsearch PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_link_libraries(vecsearch PUBLIC Threads::Threads)
 
+string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" _arch)
+if(_arch MATCHES "x86_64|amd64")
+  target_sources(vecsearch PRIVATE src/distance/avx2.cpp)
+  # Only this translation unit may use AVX2/FMA instructions; the rest of the library stays
+  # baseline x86-64 so the binary runs on any CPU. dispatch.cpp picks the kernels at runtime.
+  set_source_files_properties(src/distance/avx2.cpp PROPERTIES COMPILE_OPTIONS "-mavx2;-mfma")
+  target_compile_definitions(vecsearch PRIVATE VECSEARCH_HAVE_AVX2=1)
+elseif(_arch MATCHES "arm64|aarch64")
+  # NEON is part of the AArch64 baseline, so no extra flags are needed.
+  target_sources(vecsearch PRIVATE src/distance/neon.cpp)
+  target_compile_definitions(vecsearch PRIVATE VECSEARCH_HAVE_NEON=1)
+endif()
+
 # ---- Dependencies (fetched) ------------------------------------------------
 include(FetchContent)
 if(VECSEARCH_BUILD_TESTS)
