@@ -37,3 +37,50 @@ One entry per phase: the key ideas, the design decisions, and questions an inter
    downsides (build time, network access in CI)?
 4. Why do you test on both x86-64 and ARM runners?
 5. What does `CMAKE_POSITION_INDEPENDENT_CODE` do, and why will the Python extension need it?
+
+## Phase 1: Storage and exact search
+
+**What was built**
+
+- `AlignedAllocator<T, 64>` and `AlignedVector<T>`: `std::vector` storage from aligned
+  `operator new`. Vectors are stored contiguously, one row per vector, with the row length
+  padded to a multiple of 16 floats (`padded_dim`), so every vector starts on a 64-byte
+  cache-line boundary. The padding is zero.
+- Metrics: squared L2, inner product (distance `1 - <a,b>`, so smaller is always better), and
+  cosine (vectors and queries normalized to unit length, then inner product).
+- Scalar `l2_sq` and `dot` kernels, written as plain loops with one accumulator.
+- `TopK<Id>`: a bounded max-heap of size k. The root is the worst kept result, so rejecting a
+  candidate costs one comparison. Ties are broken by id so results are deterministic.
+- `FlatIndex`: `add` appends rows, `search` scans every row per query, in parallel across
+  queries with `parallel_for` (dynamic chunked scheduling over an atomic counter).
+- Binary save/load with an 8-byte magic string and a format version.
+- A NumPy fixture (`tools/make_flat_fixture.py`): random data plus NumPy's float64 brute-force
+  top-10 ids for all three metrics. The C++ test requires identical ids.
+
+**Design decisions**
+
+- *Why contiguous storage?* A brute-force scan reads memory sequentially, which the hardware
+  prefetcher handles perfectly. `std::vector<std::vector<float>>` would put each vector in its
+  own heap allocation: a pointer chase per vector and no prefetching.
+- *Why 64-byte alignment?* A misaligned 128-float (512 B) vector touches 9 cache lines instead
+  of 8, and SIMD loads that cross a cache line are slower. Alignment also lets kernels use
+  aligned loads if they want to (ours use unaligned loads, which cost the same on aligned data
+  on modern x86 and are safe for user-provided query pointers).
+- *Why `1 - dot` for inner product?* One "smaller is closer" convention lets every index and
+  heap be metric-agnostic. It is the same convention as hnswlib.
+- *Why normalize cosine at insert?* Then cosine is just a dot product: no per-comparison norm
+  computation, and the same SIMD kernel serves both metrics.
+- *Why a max-heap for top-k?* O(n log k) instead of O(n log n) for a full sort, and O(k) memory.
+- *Ground truth as a fixture.* The C++ tests have no Python dependency at test time, but the
+  expected ids really come from NumPy (computed in float64, stable sort for ties).
+
+**Interview questions**
+
+1. Why is a max-heap (not a min-heap) the right structure for keeping the k *smallest* items?
+2. What is the cost of a 64-byte-aligned allocation vs. a normal one, and when does alignment
+   actually matter for performance?
+3. Why does `-O3` not vectorize the scalar `l2_sq` loop, and what flag would let it?
+4. Cosine similarity and inner product give the same ranking when? What breaks if a user adds a
+   zero vector?
+5. Your parallel brute-force search writes into one shared result array from many threads.
+   Why is that not a data race?

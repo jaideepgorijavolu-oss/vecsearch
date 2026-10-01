@@ -37,6 +37,9 @@ find_package(Threads REQUIRED)
 
 add_library(vecsearch STATIC
   src/version.cpp
+  src/distance/scalar.cpp
+  src/distance/dispatch.cpp
+  src/index/flat_index.cpp
 )
 target_include_directories(vecsearch PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_link_libraries(vecsearch PUBLIC Threads::Threads)
