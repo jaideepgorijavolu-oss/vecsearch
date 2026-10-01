@@ -262,3 +262,39 @@ configuration with ~±5–10% noise.
    your hypothesis?
 5. How do you make sure a benchmark against hnswlib/Faiss is fair (parameters, threads, recall
    at equal ef vs equal QPS, process isolation, noise)?
+
+## Phase 6: Thin service layer
+
+**What was built**
+
+- `service/app`: FastAPI with `POST /collections`, batch upsert, search, delete, `/health`.
+  Pydantic models enforce static bounds (k in 1..1000, dim, name pattern, batch size); the
+  dimension check needs the collection, so the handler does it and returns 422.
+- `RWLock` (writer-preferring) per collection: many concurrent searches (the C++ search
+  releases the GIL), or one writer.
+- Tags: `{key: int|str}` per vector, an inverted index `(key, value) -> ids`, filters are AND of
+  equalities; the matching ids go to the C++ search as `filter`, so filtering happens during
+  graph traversal.
+- `service/Dockerfile` (multi-stage: compiler stage builds the wheel, slim runtime stage,
+  non-root user, healthcheck), `docker-compose.yml`.
+- Tests with FastAPI's `TestClient` (10 tests: correctness vs brute force, filters, upsert of
+  tags, delete, validation errors, concurrent reads + writes, the RW lock itself).
+- Locust load test with server-side timing headers to split latency into engine vs everything
+  else; a filter-selectivity benchmark.
+
+**What the measurements showed:** the service saturates at ~1,000 req/s on one Uvicorn worker
+because everything except the engine holds the GIL; at one user, the engine is ~16% of the
+latency. Restrictive filters do not hurt recall in this design (the search keeps going until
+it has ef allowed results), they hurt latency: below ~10% selectivity, brute force over the
+allowed ids is faster.
+
+**Interview questions**
+
+1. Why a reader-writer lock and not a plain mutex? Why writer-preferring?
+2. Your "engine time" grows from 0.16 ms to 1 ms under load. Is the C++ code slower? (GIL
+   re-acquisition is inside the measured interval.)
+3. How would you get past 1,000 req/s? Compare multiple processes, query batching and a
+   different wire format.
+4. Filters: why traverse filtered-out nodes instead of skipping them? When should a query
+   planner switch to brute force?
+5. What does each Dockerfile stage contain, and why is the compiler not in the final image?

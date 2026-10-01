@@ -136,10 +136,20 @@ with many tombstones spends effort on nodes it cannot return. A real system woul
 
 `search(..., allowed_labels)` turns the allowed labels into a per-node byte mask and passes an
 `accept(id)` predicate to `search_layer`. Like tombstones, filtered-out nodes are traversed but
-never returned. This keeps the graph navigable, but with a restrictive filter the beam fills up
-with nodes it cannot return; the search continues until it has `ef` accepted results or runs
-out of candidates. So restrictive filters cost latency rather than correctness, and recall can
-drop when the allowed nodes are few and far apart in the graph. Measured in RESULTS.md, Phase 6.
+never returned, which keeps the graph navigable. The search keeps going until it holds `ef`
+*accepted* results (or runs out of candidates), so a restrictive filter makes the beam walk
+through many rejected nodes.
+
+Measured (`bench/ann/filter_recall.py`, SIFT 100k, random filters, ef = 64; RESULTS.md,
+Phase 6): recall stays ≥ 0.98 at every selectivity down to 0.1%, but QPS falls from 8,481
+(no filter) to 254 at 1% and 43 at 0.1%, while brute force over just the allowed vectors runs
+at 57k and 421k QPS. So with this design the cost of a restrictive filter is **latency, not
+recall**, and below roughly 10% selectivity, scanning the allowed set exactly is both faster
+and exact. A production system would pick per query: brute force when the filter is small,
+filtered graph search otherwise. Not implemented here (out of scope); the service always uses
+the graph. Caveat: these filters are uncorrelated with the vectors. A filter whose allowed
+vectors sit far from the query in the graph (correlated filters) can also cost recall; that
+was not measured.
 
 ## Persistence
 

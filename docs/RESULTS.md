@@ -297,4 +297,83 @@ to hide a ~100 ns DRAM miss. Prefetching a whole neighbor list at once gives the
 
 ## Phase 6: Service load test
 
-TBD
+Setup: `docker compose up --build` (the multi-stage image from `service/Dockerfile`, one Uvicorn
+worker), then from the dev container on the same Docker network:
+
+```bash
+python3 service/loadtest/run_loadtest.py --url http://vecsearch:8000 --users 1,4,16,64 --duration 30s
+```
+
+It loads the SIFT 100k subset over HTTP (20 batches of 5,000 upserts, with a tag per vector),
+then runs Locust (`service/loadtest/locustfile.py`, `FastHttpUser`, no think time, so N users =
+N requests in flight) for 30 s per level. Each request is a k = 10, ef = 64 search with a random
+SIFT query vector as JSON. Raw output: `service/loadtest/results.md`.
+
+Loading 100,000 vectors over HTTP took 12.7 s (~7,900 vectors/s, including JSON parsing and
+Pydantic validation of 12.8M floats).
+
+| concurrent users | req/s | failures | client p50 (ms) | client p99 (ms) | handler p50 / p99 (ms) | engine p50 / p99 (ms) |
+|---:|---:|---:|---:|---:|---:|---:|
+| 1 | 663 | 0 | 1 | 2 | 0.23 / 0.49 | 0.16 / 0.37 |
+| 4 | 890 | 0 | 4 | 7 | 0.53 / 1.72 | 0.45 / 1.62 |
+| 16 | 994 | 0 | 15 | 29 | 1.11 / 3.26 | 1.02 / 3.14 |
+| 64 | 910 | 0 | 68 | 110 | 1.02 / 4.39 | 0.92 / 4.27 |
+
+Columns: *client* = Locust's end-to-end latency (Locust reports whole milliseconds, so these are
+coarse); *handler* = time inside the FastAPI handler (`X-Handler-Time-Ms`); *engine* = the C++
+search call (`X-Engine-Time-Ms`).
+
+**Where the time goes.** With one user, a request takes ~1 ms end to end, of which the engine
+is ~0.16 ms (16%) and the whole handler ~0.23 ms. The other ~0.75 ms is outside the handler:
+HTTP parsing, JSON decoding of 128 floats, Pydantic validation, response serialization, the
+event-loop/threadpool hand-off, and the Docker network hop. Throughput saturates at about
+**1,000 req/s** from 16 users on, while the engine alone does ~5,800 QPS per thread on the much
+larger SIFT1M (Phase 4). Past saturation, extra users only queue (p50 68 ms at 64 users).
+
+**Why it saturates:** everything except the C++ search holds Python's GIL, and there is a single
+Uvicorn worker process, so the Python request path runs on effectively one core. The engine
+times also grow under load (0.16 → ~1 ms) even though the C++ search itself does not slow down
+that much: the measured interval ends when the pybind call returns, which requires re-acquiring
+the GIL, so under contention it includes waiting for the GIL. Locust runs on the same machine
+and takes CPU too.
+
+What would raise throughput (not done; outside this phase's scope): several worker processes
+(each would need its own copy of the index, or the index in shared memory), batching
+concurrent queries into one engine call, a binary request format instead of JSON float arrays,
+or a non-Python front end.
+
+### Filtered search: recall and cost vs. filter selectivity
+
+Command: `python3 bench/ann/filter_recall.py --ef 64` (and `--ef 256`). SIFT 100k subset,
+1,000 queries, 1 thread; a random fraction of ids is allowed; ground truth = exact top-10 among
+the allowed vectors. Raw output: `bench/ann/results/filter_recall.md`.
+
+| selectivity | allowed vectors | recall@10 (ef 64) | filtered HNSW QPS (ef 64) | brute force over allowed QPS |
+|---:|---:|---:|---:|---:|
+| 100% (no filter) | 100,000 | 0.9836 | 8,481 | 470 |
+| 50% | 50,000 | 0.9934 | 5,177 | 1,123 |
+| 10% | 10,000 | 0.9995 | 1,519 | 8,051 |
+| 1% | 1,000 | 1.0000 | 254 | 57,521 |
+| 0.1% | 100 | 1.0000 | 43 | 421,321 |
+
+Recall does not drop with these (random, uncorrelated) filters; it rises, because the search
+keeps expanding until it has ef = 64 *allowed* results and so explores far more of the graph.
+The cost is latency: 33× fewer QPS at 1% selectivity. Brute force over the allowed set wins
+somewhere between 50% and 10% selectivity, so a real system should switch strategies per query
+(see DESIGN.md, Filtering). Correlated filters were not measured.
+
+## Resume bullets (numbers from this file)
+
+- Implemented an HNSW approximate nearest neighbor index from scratch in C++20 with
+  hand-written AVX2/NEON distance kernels and multithreaded search, reaching 5,834 QPS on one
+  thread at 0.963 recall@10 on SIFT1M (112% of hnswlib's and 123% of Faiss's single-thread
+  throughput at equal parameters; 89% of Faiss with 16 threads).
+- Profiled the search hot path with `perf` (IPC 0.32, ~13.5k LLC misses per query), identified
+  serialized DRAM misses on vector and visited-list loads, and added batched software
+  prefetching, improving single-thread throughput by 21% and cutting p99 latency by 19%.
+- Exposed the engine through zero-copy pybind11 bindings (GIL released) and a Dockerized
+  FastAPI service with metadata-filtered search, sustaining ~990 req/s with p99 29 ms at 16
+  concurrent clients; measured that ~84% of single-request latency is HTTP/Python overhead, not
+  the engine.
+
+(Measured on a laptop in Eco power mode; see Hardware.)

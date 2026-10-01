@@ -58,9 +58,23 @@ vecsearch::SearchResult r = index.search(queries, nq, /*k=*/10, /*ef=*/64);
 // r.ids[q * 10 + j], r.distances[q * 10 + j]
 ```
 
-### Docker
+### Docker (HTTP service)
 
-TBD (Phase 6).
+```bash
+docker compose up --build        # serves on http://localhost:8000
+```
+
+```bash
+curl -X POST localhost:8000/collections -H 'Content-Type: application/json'   -d '{"name": "docs", "dim": 3, "metric": "cosine"}'
+curl -X POST localhost:8000/collections/docs/vectors -H 'Content-Type: application/json'   -d '{"vectors": [{"id": 1, "vector": [1, 0, 0], "tags": {"lang": "en"}},
+                   {"id": 2, "vector": [0, 1, 0], "tags": {"lang": "fr"}}]}'
+curl -X POST localhost:8000/collections/docs/search -H 'Content-Type: application/json'   -d '{"vector": [0.9, 0.1, 0], "k": 2, "filter": {"lang": "en"}}'
+curl -X DELETE localhost:8000/collections/docs/vectors/2
+```
+
+Endpoints: `POST /collections`, `POST /collections/{name}/vectors` (batch upsert with tags),
+`POST /collections/{name}/search` (optional tag filter), `DELETE /collections/{name}/vectors/{id}`,
+`GET /health`. Interactive docs at `/docs`.
 
 ## Development
 
@@ -72,7 +86,10 @@ tools/dev.sh "cmake --preset release && cmake --build --preset release && ctest 
 ```
 
 Presets: `release`, `debug`, `sanitizer` (ASan + UBSan), `tsan`, `bench` (adds Google
-Benchmark and the ANN tools).
+Benchmark and the ANN tools). In Docker, TSan needs ASLR off:
+`DEV_DOCKER_FLAGS="--security-opt seccomp=unconfined" tools/dev.sh "setarch -R bash -c 'cmake --build --preset tsan && ctest --preset tsan'"`.
+`make bench` reproduces every benchmark number (about 1.5 hours; perf profiling needs
+`DEV_DOCKER_FLAGS=--privileged`).
 
 ## Docs
 

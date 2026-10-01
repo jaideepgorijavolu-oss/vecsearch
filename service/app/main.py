@@ -52,7 +52,7 @@ def _get(name: str) -> Collection:
 
 def _check_dim(col: Collection, n: int) -> None:
     if n != col.dim:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY,
+        raise HTTPException(422,
                             f"vector has dimension {n}, collection '{col.name}' has {col.dim}")
 
 
@@ -78,7 +78,7 @@ def upsert(name: str, req: UpsertRequest) -> UpsertResult:
         _check_dim(col, len(item.vector))
     ids = np.array([v.id for v in req.vectors], dtype=np.int64)
     if len(np.unique(ids)) != len(ids):
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "duplicate ids in one batch")
+        raise HTTPException(422, "duplicate ids in one batch")
     vectors = np.array([v.vector for v in req.vectors], dtype=np.float32)
     col.upsert(ids, vectors, [v.tags for v in req.vectors])
     return UpsertResult(upserted=len(ids), size=len(col))
