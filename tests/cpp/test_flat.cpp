@@ -149,6 +149,25 @@ TEST(Flat, SaveLoadRoundTrip) {
   EXPECT_EQ(a.distances, b.distances);
 }
 
+TEST(Flat, RemoveSkipsVector) {
+  FlatIndex index(8, Metric::L2);
+  const auto data = test::random_vectors(50, 8, 6);
+  index.add(data.data(), 50);
+  EXPECT_TRUE(index.remove(3));
+  EXPECT_FALSE(index.remove(3));
+  EXPECT_FALSE(index.remove(50));
+  EXPECT_FALSE(index.remove(-1));
+  EXPECT_EQ(index.size(), 49u);
+  const auto res = index.search(data.data() + 3 * 8, 1, 49);
+  for (auto id : res.ids) EXPECT_NE(id, 3);
+  const auto path = (std::filesystem::temp_directory_path() / "vecsearch_flat_rm.bin").string();
+  index.save(path);
+  const FlatIndex loaded = FlatIndex::load(path);
+  std::filesystem::remove(path);
+  EXPECT_EQ(loaded.size(), 49u);
+  EXPECT_EQ(loaded.search(data.data() + 3 * 8, 1, 49).ids, res.ids);
+}
+
 TEST(Flat, LoadRejectsGarbage) {
   const auto path = (std::filesystem::temp_directory_path() / "vecsearch_garbage.bin").string();
   {

@@ -1,0 +1,28 @@
+[build-system]
+requires = ["scikit-build-core>=0.10", "pybind11>=2.13"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "vecsearch"
+version = "0.1.0"
+description = "HNSW approximate nearest neighbor search in C++20 with SIMD kernels"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = ["numpy>=1.21"]
+
+[project.optional-dependencies]
+test = ["pytest>=7"]
+
+[tool.scikit-build]
+cmake.version = ">=3.24"
+cmake.build-type = "Release"
+wheel.packages = ["python/vecsearch"]
+build-dir = "build/{wheel_tag}"
+sdist.exclude = ["bench/micro/results", "data"]
+
+[tool.scikit-build.cmake.define]
+VECSEARCH_BUILD_TESTS = "OFF"
+VECSEARCH_BUILD_PYTHON = "ON"
+
+[tool.pytest.ini_options]
+testpaths = ["tests/python"]

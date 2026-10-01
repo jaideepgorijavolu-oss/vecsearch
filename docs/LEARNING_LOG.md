@@ -182,3 +182,45 @@ memory-bound, not compute-bound.
 4. How does parallel construction avoid deadlocks and data races? What would break if you
    read a neighbor list without the lock during construction?
 5. Why does deleting nodes by tombstone hurt search over time, and what would you do about it?
+
+## Phase 5: Python package (done before Phase 4)
+
+*Order change:* the Phase 4 benchmark harness drives this engine, hnswlib and Faiss from the
+same Python script, so that all three are timed the same way (batch calls from NumPy into C++).
+That needs the bindings, so Phase 5 was done first.
+
+**What was built**
+
+- `python/bindings.cpp` (pybind11 module `vecsearch._core`): `FlatIndex` and `HNSWIndex` with
+  `add`, `search`, `delete`, `save`, `load`, `ef_search` / `prefetch` setters, `len()`, `in`.
+- Zero-copy input: arguments are taken as `py::handle`, checked to be `numpy.ndarray`, dtype
+  float32, C-contiguous, 1-D or 2-D with the right dimension, and then the C++ code reads the
+  NumPy buffer directly. Wrong inputs raise `TypeError` / `ValueError` that say how to fix them
+  (e.g. "use arr.astype(np.float32)"). Ids and filters (small) are converted to int64.
+- Zero-copy output: the `SearchResult` is moved to the heap and the two NumPy result arrays
+  point into it, owned by a `py::capsule` that frees it when both arrays are gone.
+- The GIL is released (`py::gil_scoped_release`) during add, search and save.
+- Packaging: `pyproject.toml` with scikit-build-core; `pip install .` builds the extension with
+  CMake. pytest suite (26 tests): exact match with NumPy (Flat), recall vs NumPy (HNSW), k > n,
+  empty index, wrong dtype / dim / shape / contiguity, ids mismatch, delete, filter,
+  save/load, concurrent searches from Python threads, results outliving the index.
+- `tools/run_readme_example.py` runs the README's Python block, in CI too.
+
+**Design decisions**
+
+- *Refuse rather than convert.* `py::array_t<float, forcecast>` would silently copy a float64
+  array: a 4 GB copy for a large dataset, and "zero copy" would be false. An error is better.
+- *Why releasing the GIL matters:* without it, a web server's worker threads would serialize
+  on every search even though the C++ search is thread-safe.
+- *Lifetime while the GIL is released*: the `Matrix` struct holds a reference to the array, so
+  Python cannot free the buffer while C++ is reading it.
+
+**Interview questions**
+
+1. What is the buffer protocol, and what exactly does "zero copy" mean for input and output
+   here?
+2. What can go wrong if you release the GIL and the NumPy array is freed or resized by
+   another Python thread?
+3. Why reject float64 input instead of converting it?
+4. How does the capsule keep the result memory alive, and when is it freed?
+5. How does scikit-build-core turn a CMake project into a wheel?

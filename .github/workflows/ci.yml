@@ -52,3 +52,21 @@ jobs:
         run: |
           sudo sysctl vm.mmap_rnd_bits=28
           ctest --preset ${{ matrix.preset }}
+
+  python:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-14]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install package
+        run: pip install ".[test]"
+      - name: pytest
+        run: cd /tmp && python -m pytest -q "$GITHUB_WORKSPACE/tests/python"
+      - name: README example
+        run: cd /tmp && python "$GITHUB_WORKSPACE/tools/run_readme_example.py"

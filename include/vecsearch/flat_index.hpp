@@ -1,7 +1,9 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 #include <string>
+#include <vector>
 
 #include "vecsearch/aligned_allocator.hpp"
 #include "vecsearch/distance.hpp"
@@ -24,12 +26,19 @@ class FlatIndex {
   SearchResult search(const float* queries, std::size_t nq, std::size_t k,
                       std::size_t num_threads = 0) const;
 
-  std::size_t size() const { return size_; }
+  // Marks vector `id` as deleted; it is skipped by search. Returns false if the id does not
+  // exist or is already deleted.
+  bool remove(std::int64_t id);
+
+  std::size_t size() const { return size_ - num_deleted_; }  // live vectors
+  std::size_t element_count() const { return size_; }        // including deleted
   std::size_t dim() const { return dim_; }
   Metric metric() const { return metric_; }
   // The stored (possibly normalized) vector with id i.
   const float* vector(std::size_t i) const { return data_.data() + i * stride_; }
-  std::size_t memory_bytes() const { return data_.capacity() * sizeof(float); }
+  std::size_t memory_bytes() const {
+    return data_.capacity() * sizeof(float) + deleted_.capacity();
+  }
 
   void save(const std::string& path) const;
   static FlatIndex load(const std::string& path);
@@ -40,6 +49,8 @@ class FlatIndex {
   Metric metric_;
   std::size_t size_ = 0;
   AlignedVector<float> data_;  // size_ rows of stride_ floats, contiguous
+  std::vector<std::uint8_t> deleted_;
+  std::size_t num_deleted_ = 0;
 };
 
 }  // namespace vecsearch
