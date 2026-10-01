@@ -1,0 +1,26 @@
+{
+  "version": 6,
+  "configurePresets": [
+    { "name": "base", "hidden": true, "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}" },
+    { "name": "release", "inherits": "base", "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" } },
+    { "name": "debug", "inherits": "base", "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug" } },
+    { "name": "sanitizer", "inherits": "base", "cacheVariables": { "CMAKE_BUILD_TYPE": "Sanitizer" } },
+    { "name": "tsan", "inherits": "base", "cacheVariables": { "CMAKE_BUILD_TYPE": "TSan" } },
+    { "name": "bench", "inherits": "base",
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Release", "VECSEARCH_BUILD_BENCH": "ON" } }
+  ],
+  "buildPresets": [
+    { "name": "release", "configurePreset": "release" },
+    { "name": "debug", "configurePreset": "debug" },
+    { "name": "sanitizer", "configurePreset": "sanitizer" },
+    { "name": "tsan", "configurePreset": "tsan" },
+    { "name": "bench", "configurePreset": "bench" }
+  ],
+  "testPresets": [
+    { "name": "release", "configurePreset": "release", "output": { "outputOnFailure": true } },
+    { "name": "debug", "configurePreset": "debug", "output": { "outputOnFailure": true } },
+    { "name": "sanitizer", "configurePreset": "sanitizer", "output": { "outputOnFailure": true } },
+    { "name": "tsan", "configurePreset": "tsan", "output": { "outputOnFailure": true } }
+  ]
+}

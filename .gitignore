@@ -1,0 +1,10 @@
+build/
+_skbuild/
+*.egg-info/
+__pycache__/
+.pytest_cache/
+/data/
+bench/ann/results/*.json.tmp
+*.so
+*.pyd
+.venv/
