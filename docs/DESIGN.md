@@ -154,9 +154,13 @@ was not measured.
 ## Persistence
 
 Binary file: 8-byte magic (`VSHNSW01` / `VSFLAT01`) and a uint32 version, parameters, then raw
-arrays (labels, levels, tombstones, layer-0 blocks, upper blocks, vectors). Loading validates
-the header, every neighbor count and every neighbor id, so a corrupt file throws instead of
-causing out-of-bounds reads. Host byte order (no cross-endian portability).
+arrays (labels, levels, tombstones, layer-0 blocks, upper blocks, vectors). Loading treats every
+field as untrusted: it checks header ranges, that the exact file size matches the header
+(overflow-safe, before allocating), that max level equals the highest node level and the entry
+point is on it, neighbor counts against capacity, that every layer-l edge targets an existing
+node on layer l, deleted flags, and that live labels are unique and not -1. Any violation throws
+(`RuntimeError` in Python) instead of crashing a later search; `tests/cpp/test_corrupt.cpp`
+covers each case, every truncation, and random byte flips under ASan. Host byte order (no cross-endian portability).
 
 ## What was intentionally left out
 
