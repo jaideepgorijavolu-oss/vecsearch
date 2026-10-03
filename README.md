@@ -1,5 +1,8 @@
 # vecsearch
 
+[![CI](https://github.com/jaideepgorijavolu-oss/vecsearch/actions/workflows/ci.yml/badge.svg)](https://github.com/jaideepgorijavolu-oss/vecsearch/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 A from-scratch approximate nearest neighbor (ANN) search engine in C++20: an HNSW graph index
 with hand-written AVX2/NEON distance kernels and runtime CPU dispatch, multithreaded build and
 search, soft deletes and filtered search, zero-copy Python bindings, and a small FastAPI
@@ -76,6 +79,10 @@ Endpoints: `POST /collections`, `POST /collections/{name}/vectors` (batch upsert
 `POST /collections/{name}/search` (optional tag filter), `DELETE /collections/{name}/vectors/{id}`,
 `GET /health`. Interactive docs at `/docs`.
 
+The service is **in-memory and process-local**: collections live in one Uvicorn process and
+are lost on restart (no persistence, no sharing across workers or replicas). Vector values must
+be finite with |x| ≤ 1e15 (so float32 distances cannot overflow); ids are non-negative int64.
+
 ## Development
 
 The spec targets GCC/Clang on Linux/macOS. On Windows everything runs in a Docker image:
@@ -90,6 +97,10 @@ Benchmark and the ANN tools). In Docker, TSan needs ASLR off:
 `DEV_DOCKER_FLAGS="--security-opt seccomp=unconfined" tools/dev.sh "setarch -R bash -c 'cmake --build --preset tsan && ctest --preset tsan'"`.
 `make bench` reproduces every benchmark number (about 1.5 hours; perf profiling needs
 `DEV_DOCKER_FLAGS=--privileged`).
+
+## License
+
+MIT, see [LICENSE](LICENSE).
 
 ## Docs
 

@@ -1,3 +1,4 @@
+import json
 import threading
 
 import numpy as np
@@ -173,3 +174,69 @@ def test_rwlock_excludes_writer_from_readers():
     for t in threads:
         t.join()
     assert state["violations"] == 0
+
+
+# ---- invalid numbers and ids must be 422 and leave the collection unchanged ----
+
+BAD_NUMBERS = [float("nan"), float("inf"), float("-inf"), 1e100, -1e100, 1e16]
+
+
+def post_raw(client, url, body):
+    """httpx refuses to encode NaN/Infinity, but Python clients (json.dumps) send them happily."""
+    return client.post(url, content=json.dumps(body), headers={"Content-Type": "application/json"})
+
+
+@pytest.mark.parametrize("bad", BAD_NUMBERS)
+def test_upsert_rejects_bad_numbers_atomically(client, bad):
+    vecs = make_collection(client, n=20)
+    good = {"id": 100, "vector": [0.5] * 8, "tags": {"parity": "new"}}
+    bad_item = {"id": 101, "vector": [0.1] * 7 + [bad], "tags": {"parity": "new"}}
+    r = post_raw(client, "/collections/docs/vectors", {"vectors": [good, bad_item]})
+    assert r.status_code == 422, r.text
+    # Nothing from the batch went in: not the valid vector, not its tags.
+    r = client.post("/collections/docs/search",
+                    json={"vector": [0.5] * 8, "k": 5, "filter": {"parity": "new"}})
+    assert r.status_code == 200 and r.json()["hits"] == []
+    assert client.delete("/collections/docs/vectors/100").status_code == 404
+    # And the collection still searches fine.
+    r = client.post("/collections/docs/search", json={"vector": vecs[0].tolist(), "k": 3})
+    assert r.status_code == 200 and r.json()["hits"][0]["id"] == 0
+
+
+@pytest.mark.parametrize("bad", BAD_NUMBERS)
+def test_search_rejects_bad_numbers(client, bad):
+    make_collection(client, n=20)
+    r = post_raw(client, "/collections/docs/search", {"vector": [0.1] * 7 + [bad], "k": 3})
+    assert r.status_code == 422, r.text
+
+
+def test_largest_allowed_values_still_search(client):
+    """At the documented bound (|x| <= 1e15) squared distances stay finite."""
+    make_collection(client, n=5, tags=False)
+    big = [1e15, -1e15] * 4
+    assert client.post("/collections/docs/vectors",
+                       json={"vectors": [{"id": 50, "vector": big}]}).status_code == 200
+    r = client.post("/collections/docs/search", json={"vector": [-x for x in big], "k": 6})
+    assert r.status_code == 200
+    assert len(r.json()["hits"]) == 6
+
+
+@pytest.mark.parametrize("bad_id", [1.9, 2.0, True, -1, 2**63, "3"])
+def test_upsert_rejects_bad_ids(client, bad_id):
+    make_collection(client, n=5, tags=False)
+    r = client.post("/collections/docs/vectors", json={"vectors": [{"id": bad_id, "vector": [0.0] * 8}]})
+    assert r.status_code == 422, r.text
+
+
+@pytest.mark.parametrize("bad_tag", [1.5, True, None, [1]])
+def test_tags_must_be_int_or_string(client, bad_tag):
+    make_collection(client, n=5, tags=False)
+    item = {"id": 9, "vector": [0.0] * 8, "tags": {"t": bad_tag}}
+    assert client.post("/collections/docs/vectors", json={"vectors": [item]}).status_code == 422
+    r = client.post("/collections/docs/search", json={"vector": [0.0] * 8, "filter": {"t": bad_tag}})
+    assert r.status_code == 422
+
+
+def test_delete_negative_id_is_422(client):
+    make_collection(client, n=5, tags=False)
+    assert client.delete("/collections/docs/vectors/-1").status_code == 422

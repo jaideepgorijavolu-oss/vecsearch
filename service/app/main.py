@@ -22,7 +22,11 @@ import threading
 import time
 
 import numpy as np
-from fastapi import FastAPI, HTTPException, Response, status
+from typing import Annotated
+
+from fastapi import FastAPI, HTTPException, Path, Request, Response, status
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 
 import vecsearch
 
@@ -43,6 +47,14 @@ _collections: dict[str, Collection] = {}
 _registry_lock = threading.Lock()
 
 
+@app.exception_handler(RequestValidationError)
+def validation_error(_: Request, exc: RequestValidationError) -> JSONResponse:
+    # FastAPI's default 422 body echoes the offending input; a NaN or Infinity there cannot be
+    # encoded as JSON and the error response itself would fail with a 500.
+    errors = [{"loc": list(e["loc"]), "msg": e["msg"], "type": e["type"]} for e in exc.errors()]
+    return JSONResponse(status_code=422, content={"detail": errors})
+
+
 def _get(name: str) -> Collection:
     col = _collections.get(name)
     if col is None:
@@ -54,6 +66,15 @@ def _check_dim(col: Collection, n: int) -> None:
     if n != col.dim:
         raise HTTPException(422,
                             f"vector has dimension {n}, collection '{col.name}' has {col.dim}")
+
+
+def _as_float32(values, what: str) -> np.ndarray:
+    """Converts validated floats to float32 and re-checks finiteness after the conversion
+    (defense in depth: the schema bound already keeps values in float32 range)."""
+    arr = np.asarray(values, dtype=np.float32)
+    if not np.isfinite(arr).all():
+        raise HTTPException(422, f"{what} contains values that are not finite in float32")
+    return arr
 
 
 @app.get("/health", response_model=Health)
@@ -79,7 +100,8 @@ def upsert(name: str, req: UpsertRequest) -> UpsertResult:
     ids = np.array([v.id for v in req.vectors], dtype=np.int64)
     if len(np.unique(ids)) != len(ids):
         raise HTTPException(422, "duplicate ids in one batch")
-    vectors = np.array([v.vector for v in req.vectors], dtype=np.float32)
+    # Everything is validated before the index is touched, so a bad batch inserts nothing.
+    vectors = _as_float32([v.vector for v in req.vectors], "vectors")
     col.upsert(ids, vectors, [v.tags for v in req.vectors])
     return UpsertResult(upserted=len(ids), size=len(col))
 
@@ -89,7 +111,7 @@ def search(name: str, req: SearchRequest, response: Response) -> SearchResponse:
     t0 = time.perf_counter()
     col = _get(name)
     _check_dim(col, len(req.vector))
-    query = np.asarray(req.vector, dtype=np.float32)
+    query = _as_float32(req.vector, "vector")
     ids, dists, engine_s = col.search(query, req.k, req.ef, req.filter)
     result = SearchResponse(hits=[Hit(id=i, distance=d) for i, d in zip(ids, dists)])
     response.headers["X-Engine-Time-Ms"] = f"{engine_s * 1e3:.4f}"
@@ -98,7 +120,7 @@ def search(name: str, req: SearchRequest, response: Response) -> SearchResponse:
 
 
 @app.delete("/collections/{name}/vectors/{vid}", response_model=DeleteResult)
-def delete_vector(name: str, vid: int) -> DeleteResult:
+def delete_vector(name: str, vid: Annotated[int, Path(ge=0, le=2**63 - 1)]) -> DeleteResult:
     col = _get(name)
     if not col.delete(vid):
         raise HTTPException(status.HTTP_404_NOT_FOUND, f"id {vid} not found in '{name}'")
