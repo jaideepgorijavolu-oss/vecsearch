@@ -104,6 +104,11 @@ void HnswIndex::add(const float* vectors, std::size_t n, const std::int64_t* lab
   if (n == 0) return;
   if (count_ + n > std::numeric_limits<std::uint32_t>::max())
     throw std::length_error("HNSW index is limited to 2^32 - 1 vectors");
+  if (labels) {
+    for (std::size_t i = 0; i < n; ++i) {
+      if (labels[i] == kNoId) throw std::invalid_argument("id -1 is reserved for 'no result'");
+    }
+  }
   const std::size_t first = count_;
   reserve(count_ + n);
 
@@ -463,52 +468,100 @@ void HnswIndex::save(const std::string& path) const {
 }
 
 std::unique_ptr<HnswIndex> HnswIndex::load(const std::string& path) {
+  // Every value read here is untrusted. Each one is checked before it is used for an
+  // allocation or as an index, so a malformed file throws instead of crashing a later search.
   auto in = io::open_in(path);
   io::check_header(in, kMagic, kVersion);
   const auto dim = io::read_pod<std::uint64_t>(in);
   const auto metric = io::read_pod<std::uint8_t>(in);
-  if (metric > 2) throw std::runtime_error("index file has an unknown metric");
   HnswParams p;
   p.M = io::read_pod<std::uint64_t>(in);
   p.ef_construction = io::read_pod<std::uint64_t>(in);
   p.ef_search = io::read_pod<std::uint64_t>(in);
   p.seed = io::read_pod<std::uint64_t>(in);
   p.use_heuristic = io::read_pod<std::uint8_t>(in) != 0;
+  if (metric > 2) io::corrupt("unknown metric");
+  if (dim == 0 || dim > io::kMaxFileDim) io::corrupt("dimension out of range");
+  if (p.M < 2 || p.M > io::kMaxFileM) io::corrupt("M out of range");
+  if (p.ef_construction == 0) io::corrupt("ef_construction is 0");
   auto index = std::make_unique<HnswIndex>(dim, static_cast<Metric>(metric), p);
   const auto count = io::read_pod<std::uint64_t>(in);
-  index->max_level_ = io::read_pod<std::int32_t>(in);
-  index->entry_point_ = io::read_pod<std::uint32_t>(in);
-  if (count > 0 && index->entry_point_ >= count) throw std::runtime_error("corrupt index file");
+  const auto max_level = io::read_pod<std::int32_t>(in);
+  const auto entry = io::read_pod<std::uint32_t>(in);
+
+  // Fixed bytes per node: label, level, deleted flag, layer-0 block, vector. The upper-layer
+  // blocks come on top, so this is a lower bound that also caps count before we allocate.
+  const std::uint64_t fixed_per_node =
+      sizeof(std::int64_t) + 2 + (1 + index->M0_) * sizeof(std::uint32_t) +
+      index->stride_ * sizeof(float);
+  const std::uint64_t remaining = io::remaining_bytes(in);
+  if (count > std::numeric_limits<std::uint32_t>::max() || count > remaining / fixed_per_node)
+    io::corrupt("node count does not match file size");
+
+  if (count == 0) {
+    if (max_level != -1 || entry != 0) io::corrupt("empty index has an entry point");
+    if (remaining != 0) io::corrupt("unexpected trailing data");
+    return index;
+  }
+  if (max_level < 0 || max_level > kMaxLevel) io::corrupt("max level out of range");
+  if (entry >= count) io::corrupt("entry point out of range");
 
   index->reserve(count);
-  index->count_ = count;
   io::read_array(in, index->labels_.data(), count);
   io::read_array(in, index->levels_.data(), count);
   io::read_array(in, index->deleted_.data(), count);
-  io::read_array(in, index->level0_.data(), count * (1 + index->M0_));
+
+  int top = 0;
+  std::uint64_t upper_ints = 0;
   for (std::size_t i = 0; i < count; ++i) {
-    if (index->levels_[i] > kMaxLevel) throw std::runtime_error("corrupt index file");
+    if (index->levels_[i] > kMaxLevel) io::corrupt("node level out of range");
+    if (index->deleted_[i] > 1) io::corrupt("invalid deleted flag");
+    top = std::max<int>(top, index->levels_[i]);
+    upper_ints += std::uint64_t{index->levels_[i]} * (1 + p.M);
+  }
+  if (top != max_level) io::corrupt("max level does not match node levels");
+  if (index->levels_[entry] != max_level) io::corrupt("entry point is not on the top layer");
+
+  // Now the exact size of the rest of the file is known.
+  const std::uint64_t level0_ints = io::checked_mul(count, 1 + index->M0_);
+  const std::uint64_t floats = io::checked_mul(count, index->stride_);
+  const std::uint64_t expected =
+      io::checked_add(io::checked_mul(io::checked_add(level0_ints, upper_ints), 4),
+                      io::checked_mul(floats, sizeof(float)));
+  if (io::remaining_bytes(in) != expected) io::corrupt("file size does not match its header");
+
+  io::read_array(in, index->level0_.data(), level0_ints);
+  for (std::size_t i = 0; i < count; ++i) {
     index->upper_[i].resize(std::size_t(index->levels_[i]) * (1 + p.M));
     io::read_array(in, index->upper_[i].data(), index->upper_[i].size());
   }
-  io::read_array(in, index->data_.data(), count * index->stride_);
+  io::read_array(in, index->data_.data(), floats);
 
-  // A corrupt file must not turn into out-of-bounds reads during search.
+  // Every edge on layer l must point to an existing node that is itself on layer l, and no
+  // neighbor list may exceed its layer's capacity: search relies on both without checking.
   for (std::uint32_t id = 0; id < count; ++id) {
     for (int l = 0; l <= index->levels_[id]; ++l) {
       const std::uint32_t* block = index->links(id, l);
-      if (block[0] > index->max_links(l)) throw std::runtime_error("corrupt index file");
+      if (block[0] > index->max_links(l)) io::corrupt("neighbor count exceeds capacity");
       for (std::uint32_t j = 0; j < block[0]; ++j) {
-        if (block[1 + j] >= count) throw std::runtime_error("corrupt index file");
+        const std::uint32_t nb = block[1 + j];
+        if (nb >= count) io::corrupt("edge to a node that does not exist");
+        if (index->levels_[nb] < l) io::corrupt("edge to a node not on that layer");
       }
     }
   }
+
+  index->count_ = count;
+  index->max_level_ = max_level;
+  index->entry_point_ = entry;
   for (std::uint32_t id = 0; id < count; ++id) {
     if (index->deleted_[id]) {
       ++index->num_deleted_;
-    } else {
-      index->label_to_id_[index->labels_[id]] = id;
+      continue;
     }
+    const std::int64_t label = index->labels_[id];
+    if (label == kNoId) io::corrupt("label -1 is reserved");
+    if (!index->label_to_id_.emplace(label, id).second) io::corrupt("duplicate live label");
   }
   // Continue the level sequence deterministically for vectors added after loading.
   index->rng_.seed(p.seed + count);

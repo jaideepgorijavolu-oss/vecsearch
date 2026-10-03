@@ -92,14 +92,22 @@ FlatIndex FlatIndex::load(const std::string& path) {
   io::check_header(in, kMagic, kVersion);
   const auto dim = io::read_pod<std::uint64_t>(in);
   const auto metric = io::read_pod<std::uint8_t>(in);
-  if (metric > 2) throw std::runtime_error("index file has an unknown metric");
+  if (metric > 2) io::corrupt("unknown metric");
+  if (dim == 0 || dim > io::kMaxFileDim) io::corrupt("dimension out of range");
   FlatIndex index(dim, static_cast<Metric>(metric));
-  index.size_ = io::read_pod<std::uint64_t>(in);
-  index.data_.resize(index.size_ * index.stride_);
+  const auto size = io::read_pod<std::uint64_t>(in);
+  // Check the declared size against the bytes actually present before allocating anything.
+  const std::uint64_t row_bytes = index.stride_ * sizeof(float) + 1;  // vector + deleted flag
+  if (io::remaining_bytes(in) != io::checked_mul(size, row_bytes)) io::corrupt("size mismatch");
+  index.size_ = size;
+  index.data_.resize(size * index.stride_);
   io::read_array(in, index.data_.data(), index.data_.size());
-  index.deleted_.resize(index.size_);
-  io::read_array(in, index.deleted_.data(), index.size_);
-  for (auto d : index.deleted_) index.num_deleted_ += d != 0;
+  index.deleted_.resize(size);
+  io::read_array(in, index.deleted_.data(), size);
+  for (auto d : index.deleted_) {
+    if (d > 1) io::corrupt("invalid deleted flag");
+    index.num_deleted_ += d;
+  }
   return index;
 }
 

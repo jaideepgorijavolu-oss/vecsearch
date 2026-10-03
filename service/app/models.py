@@ -3,12 +3,20 @@ collection, so it happens in the handlers."""
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, StrictInt, StrictStr
 
-TagValue = int | str
+# Strict types: JSON 1.5, true or "3" are rejected rather than coerced to an int.
+TagValue = StrictInt | StrictStr
 Tags = dict[str, TagValue]
+
+# Vector components must be finite and |x| <= MAX_ABS. The bound keeps every squared L2
+# distance and dot product finite in float32 for any dim <= MAX_DIM: (2e15)^2 * 4096 = 1.6e34,
+# far below float32's max of 3.4e38. Without it, NaN/inf (or 1e100, which overflows float32)
+# get stored and every later search returns non-JSON-encodable distances (HTTP 500).
+MAX_ABS = 1e15
+Component = Annotated[float, Field(allow_inf_nan=False, ge=-MAX_ABS, le=MAX_ABS)]
 
 MAX_DIM = 4096
 MAX_BATCH = 10_000
@@ -24,8 +32,8 @@ class CreateCollection(BaseModel):
 
 
 class VectorItem(BaseModel):
-    id: int = Field(ge=0, le=2**63 - 1)
-    vector: list[float] = Field(min_length=1, max_length=MAX_DIM)
+    id: StrictInt = Field(ge=0, le=2**63 - 1)
+    vector: list[Component] = Field(min_length=1, max_length=MAX_DIM)
     tags: Tags = Field(default_factory=dict)
 
 
@@ -39,7 +47,7 @@ class UpsertResult(BaseModel):
 
 
 class SearchRequest(BaseModel):
-    vector: list[float] = Field(min_length=1, max_length=MAX_DIM)
+    vector: list[Component] = Field(min_length=1, max_length=MAX_DIM)
     k: int = Field(10, ge=1, le=MAX_K)
     ef: int | None = Field(None, ge=1, le=10_000)
     filter: Tags | None = Field(None, description="Tags that must all match (AND)")

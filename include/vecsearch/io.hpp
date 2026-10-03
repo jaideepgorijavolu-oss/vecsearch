@@ -51,6 +51,37 @@ inline std::ifstream open_in(const std::string& path) {
   return in;
 }
 
+// Thrown for any malformed file. Python sees it as RuntimeError.
+[[noreturn]] inline void corrupt(const std::string& why) {
+  throw std::runtime_error("corrupt index file: " + why);
+}
+
+// Bytes left between the read position and the end of the file.
+inline std::uint64_t remaining_bytes(std::ifstream& in) {
+  const auto pos = in.tellg();
+  in.seekg(0, std::ios::end);
+  const auto end = in.tellg();
+  in.seekg(pos);
+  if (!in || pos < 0 || end < pos) corrupt("cannot determine file size");
+  return static_cast<std::uint64_t>(end - pos);
+}
+
+// Size arithmetic on untrusted header values: throw instead of wrapping around.
+inline std::uint64_t checked_mul(std::uint64_t a, std::uint64_t b) {
+  std::uint64_t r;
+  if (__builtin_mul_overflow(a, b, &r)) corrupt("size field overflows");
+  return r;
+}
+inline std::uint64_t checked_add(std::uint64_t a, std::uint64_t b) {
+  std::uint64_t r;
+  if (__builtin_add_overflow(a, b, &r)) corrupt("size field overflows");
+  return r;
+}
+
+// Upper bounds for header fields, far above anything real, so later arithmetic cannot overflow.
+inline constexpr std::uint64_t kMaxFileDim = std::uint64_t{1} << 20;
+inline constexpr std::uint64_t kMaxFileM = std::uint64_t{1} << 16;
+
 // An 8-character magic string followed by a uint32 format version.
 inline void write_header(std::ofstream& out, const char (&magic)[9], std::uint32_t version) {
   out.write(magic, 8);

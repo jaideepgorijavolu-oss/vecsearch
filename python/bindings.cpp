@@ -8,6 +8,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+#include <limits>
 #include <memory>
 #include <optional>
 #include <string>
@@ -64,15 +65,47 @@ Matrix as_matrix(const py::handle& obj, std::size_t dim, const char* what) {
   return {arr, static_cast<const float*>(arr.data()), rows};
 }
 
-using Labels = py::array_t<std::int64_t, py::array::c_style | py::array::forcecast>;
+using Labels = py::array_t<std::int64_t, py::array::c_style>;
 
-// Labels are small next to the vectors, so any integer array (or list) is accepted and
-// converted to int64.
+// Ids must be genuine integers in int64 range, and never -1 (search uses -1 for "no result").
+// Floats, bools and strings are rejected instead of converted: forcecast would silently turn
+// 1.9 into 1, and since add() is an upsert that would overwrite vector 1.
 Labels as_labels(const py::handle& obj, const char* what) {
-  Labels labels = Labels::ensure(obj);
-  if (!labels) throw py::type_error(std::string(what) + " must be an array of integers");
-  if (labels.ndim() != 1) throw py::value_error(std::string(what) + " must be 1-D");
+  auto np = py::module_::import("numpy");
+  py::array arr = np.attr("asarray")(obj);
+  if (arr.ndim() != 1) throw py::value_error(std::string(what) + " must be 1-D");
+  if (arr.size() == 0) return Labels(0);  // np.asarray([]) is float64; an empty list is fine
+  const char kind = arr.dtype().kind();
+  if (kind != 'i' && kind != 'u') {
+    throw py::type_error(std::string(what) + " must be integers, got dtype " +
+                         std::string(py::str(arr.dtype())));
+  }
+  if (kind == 'u' && arr.dtype().itemsize() == 8 &&
+      py::int_(arr.attr("max")()).cast<std::uint64_t>() >
+          static_cast<std::uint64_t>(std::numeric_limits<std::int64_t>::max())) {
+    throw py::value_error(std::string(what) + " must fit in int64");
+  }
+  Labels labels = Labels::ensure(arr.attr("astype")("int64"));
+  for (py::ssize_t i = 0; i < labels.shape(0); ++i) {
+    if (labels.data()[i] == kNoId) throw py::value_error(std::string(what) + ": id -1 is reserved");
+  }
   return labels;
+}
+
+// One id (delete, `in`): a Python or NumPy integer, not bool or float, in int64, not -1.
+std::int64_t as_label(const py::handle& obj) {
+  auto np = py::module_::import("numpy");
+  if (PyBool_Check(obj.ptr()) || py::isinstance(obj, np.attr("bool_")) ||
+      !PyIndex_Check(obj.ptr())) {
+    throw py::type_error("id must be an integer, got " +
+                         std::string(py::str(py::type::of(obj).attr("__name__"))));
+  }
+  py::int_ v = py::reinterpret_steal<py::int_>(PyNumber_Index(obj.ptr()));
+  int overflow = 0;
+  const long long id = PyLong_AsLongLongAndOverflow(v.ptr(), &overflow);
+  if (overflow != 0) throw py::value_error("id must fit in int64");
+  if (id == kNoId) throw py::value_error("id -1 is reserved");
+  return id;
 }
 
 // Hands a SearchResult's buffers to NumPy without copying: the arrays own the result through
@@ -128,7 +161,9 @@ PYBIND11_MODULE(_core, m) {
           },
           py::arg("queries"), py::arg("k") = 10, py::arg("num_threads") = 0,
           "Returns (ids int64 (nq, k), distances float32 (nq, k)); missing results are -1 / inf.")
-      .def("delete", &FlatIndex::remove, py::arg("id"), "Soft-delete an id. False if absent.")
+      .def(
+          "delete", [](FlatIndex& self, const py::handle& id) { return self.remove(as_label(id)); },
+          py::arg("id"), "Soft-delete an id. False if absent.")
       .def("save", &FlatIndex::save, py::arg("path"), py::call_guard<py::gil_scoped_release>())
       .def_static("load", &FlatIndex::load, py::arg("path"))
       .def("__len__", &FlatIndex::size)
@@ -189,11 +224,14 @@ PYBIND11_MODULE(_core, m) {
           py::arg("num_threads") = 0, py::arg("filter") = py::none(),
           "Returns (ids int64 (nq, k), distances float32 (nq, k)); missing results are -1 / inf. "
           "filter: optional array of allowed ids.")
-      .def("delete", &HnswIndex::remove, py::arg("id"), "Soft-delete an id. False if absent.")
+      .def(
+          "delete", [](HnswIndex& self, const py::handle& id) { return self.remove(as_label(id)); },
+          py::arg("id"), "Soft-delete an id. False if absent.")
       .def("save", &HnswIndex::save, py::arg("path"), py::call_guard<py::gil_scoped_release>())
       .def_static("load", &HnswIndex::load, py::arg("path"))
       .def("__len__", &HnswIndex::size)
-      .def("__contains__", &HnswIndex::contains)
+      .def("__contains__",
+           [](const HnswIndex& self, const py::handle& id) { return self.contains(as_label(id)); })
       .def_property("ef_search", &HnswIndex::ef_search, &HnswIndex::set_ef_search)
       .def_property("prefetch", &HnswIndex::prefetch, &HnswIndex::set_prefetch)
       .def_property_readonly("dim", &HnswIndex::dim)
