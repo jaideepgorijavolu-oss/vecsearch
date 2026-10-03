@@ -20,10 +20,15 @@ using namespace vecsearch;
 namespace {
 
 using Bytes = std::vector<char>;
+using U64 = std::uint64_t;
 
 // Byte offsets of the HNSW file header (see HnswIndex::save).
-constexpr std::size_t kDimOff = 12, kMOff = 21, kCountOff = 54, kMaxLevelOff = 62,
-                      kEntryOff = 66, kLabelsOff = 70;
+constexpr std::size_t kDimOff = 12;
+constexpr std::size_t kMOff = 21;
+constexpr std::size_t kCountOff = 54;
+constexpr std::size_t kMaxLevelOff = 62;
+constexpr std::size_t kEntryOff = 66;
+constexpr std::size_t kLabelsOff = 70;
 
 std::string temp_path(const std::string& name) {
   return (std::filesystem::temp_directory_path() / name).string();
@@ -98,7 +103,9 @@ class CorruptHnsw : public ::testing::Test {
 
 }  // namespace
 
-TEST_F(CorruptHnsw, UnmodifiedFileLoads) { EXPECT_NO_THROW(load_and_search(bytes, kDim)); }
+TEST_F(CorruptHnsw, UnmodifiedFileLoads) {
+  EXPECT_NO_THROW(load_and_search(bytes, kDim));
+}
 
 // The bug report: a one-node index whose max level is changed from 0 to 1 used to load and then
 // crash in search (layer 1 of a node that has no layer-1 storage).
@@ -106,10 +113,10 @@ TEST(CorruptHnswSmall, OneNodeMaxLevelRaised) {
   HnswIndex index(4, Metric::L2);
   const float v[4] = {1, 2, 3, 4};
   index.add(v, 1);
-  ASSERT_EQ(index.level_of(0), 0);  // seed 100: the first node is on layer 0 only
+  const int level = index.level_of(0);
   Bytes b = saved_hnsw(index);
-  ASSERT_EQ(peek<std::int32_t>(b, kMaxLevelOff), 0);
-  patch<std::int32_t>(b, kMaxLevelOff, 1);
+  ASSERT_EQ(peek<std::int32_t>(b, kMaxLevelOff), level);
+  patch<std::int32_t>(b, kMaxLevelOff, level + 1);  // a layer the node has no storage for
   EXPECT_THROW(load_and_search(b, 4), std::runtime_error);
 }
 
@@ -199,20 +206,20 @@ TEST_F(CorruptHnsw, LabelsReservedOrDuplicated) {
 // Header sizes that would overflow or demand far more memory than the file holds must be
 // rejected before anything is allocated.
 TEST_F(CorruptHnsw, HeaderSizes) {
-  for (std::uint64_t count : {std::uint64_t{kN + 1}, std::uint64_t{1} << 32,
-                              std::uint64_t{1} << 40, ~std::uint64_t{0}}) {
+  const U64 counts[] = {U64{kN + 1}, U64{1} << 32, U64{1} << 40, ~U64{0}};
+  for (U64 count : counts) {
     Bytes b = bytes;
     patch<std::uint64_t>(b, kCountOff, count);
     EXPECT_THROW(load_and_search(b, kDim), std::runtime_error) << count;
   }
-  for (std::uint64_t dim : {std::uint64_t{0}, std::uint64_t{17}, std::uint64_t{1} << 40,
-                            ~std::uint64_t{0}}) {
+  const U64 dims[] = {U64{0}, U64{17}, U64{1} << 40, ~U64{0}};
+  for (U64 dim : dims) {
     Bytes b = bytes;
     patch<std::uint64_t>(b, kDimOff, dim);
     EXPECT_THROW(load_and_search(b, kDim), std::runtime_error) << dim;
   }
-  for (std::uint64_t m : {std::uint64_t{0}, std::uint64_t{1}, std::uint64_t{5},
-                          std::uint64_t{1} << 62, ~std::uint64_t{0}}) {
+  const U64 ms[] = {U64{0}, U64{1}, U64{5}, U64{1} << 62, ~U64{0}};
+  for (U64 m : ms) {
     Bytes b = bytes;
     patch<std::uint64_t>(b, kMOff, m);
     EXPECT_THROW(load_and_search(b, kDim), std::runtime_error) << m;
@@ -273,7 +280,8 @@ TEST(CorruptFlat, TruncationTrailingAndSizes) {
   EXPECT_THROW(try_load(b), std::runtime_error);
 
   // Flat header: magic(8) version(4) dim u64 @12, metric u8 @20, size u64 @21.
-  for (std::uint64_t v : {std::uint64_t{0}, std::uint64_t{1} << 40, ~std::uint64_t{0}}) {
+  const U64 values[] = {U64{0}, U64{1} << 40, ~U64{0}};
+  for (U64 v : values) {
     b = bytes;
     patch<std::uint64_t>(b, 12, v);
     EXPECT_THROW(try_load(b), std::runtime_error) << "dim " << v;

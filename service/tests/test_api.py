@@ -1,3 +1,4 @@
+import json
 import threading
 
 import numpy as np
@@ -180,12 +181,17 @@ def test_rwlock_excludes_writer_from_readers():
 BAD_NUMBERS = [float("nan"), float("inf"), float("-inf"), 1e100, -1e100, 1e16]
 
 
+def post_raw(client, url, body):
+    """httpx refuses to encode NaN/Infinity, but Python clients (json.dumps) send them happily."""
+    return client.post(url, content=json.dumps(body), headers={"Content-Type": "application/json"})
+
+
 @pytest.mark.parametrize("bad", BAD_NUMBERS)
 def test_upsert_rejects_bad_numbers_atomically(client, bad):
     vecs = make_collection(client, n=20)
     good = {"id": 100, "vector": [0.5] * 8, "tags": {"parity": "new"}}
     bad_item = {"id": 101, "vector": [0.1] * 7 + [bad], "tags": {"parity": "new"}}
-    r = client.post("/collections/docs/vectors", json={"vectors": [good, bad_item]})
+    r = post_raw(client, "/collections/docs/vectors", {"vectors": [good, bad_item]})
     assert r.status_code == 422, r.text
     # Nothing from the batch went in: not the valid vector, not its tags.
     r = client.post("/collections/docs/search",
@@ -200,7 +206,7 @@ def test_upsert_rejects_bad_numbers_atomically(client, bad):
 @pytest.mark.parametrize("bad", BAD_NUMBERS)
 def test_search_rejects_bad_numbers(client, bad):
     make_collection(client, n=20)
-    r = client.post("/collections/docs/search", json={"vector": [0.1] * 7 + [bad], "k": 3})
+    r = post_raw(client, "/collections/docs/search", {"vector": [0.1] * 7 + [bad], "k": 3})
     assert r.status_code == 422, r.text
 
 

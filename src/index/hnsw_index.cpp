@@ -491,9 +491,9 @@ std::unique_ptr<HnswIndex> HnswIndex::load(const std::string& path) {
 
   // Fixed bytes per node: label, level, deleted flag, layer-0 block, vector. The upper-layer
   // blocks come on top, so this is a lower bound that also caps count before we allocate.
-  const std::uint64_t fixed_per_node =
-      sizeof(std::int64_t) + 2 + (1 + index->M0_) * sizeof(std::uint32_t) +
-      index->stride_ * sizeof(float);
+  const std::uint64_t link_bytes = (1 + index->M0_) * sizeof(std::uint32_t);
+  const std::uint64_t vector_bytes = index->stride_ * sizeof(float);
+  const std::uint64_t fixed_per_node = sizeof(std::int64_t) + 2 + link_bytes + vector_bytes;
   const std::uint64_t remaining = io::remaining_bytes(in);
   if (count > std::numeric_limits<std::uint32_t>::max() || count > remaining / fixed_per_node)
     io::corrupt("node count does not match file size");

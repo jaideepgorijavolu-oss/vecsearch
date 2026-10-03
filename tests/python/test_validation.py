@@ -19,8 +19,8 @@ def test_one_node_max_level_raised_raises(tmp_path):
     path = tmp_path / "one.bin"
     index.save(str(path))
     raw = bytearray(path.read_bytes())
-    assert struct.unpack_from("<i", raw, MAX_LEVEL_OFFSET)[0] == 0
-    struct.pack_into("<i", raw, MAX_LEVEL_OFFSET, 1)
+    level = struct.unpack_from("<i", raw, MAX_LEVEL_OFFSET)[0]
+    struct.pack_into("<i", raw, MAX_LEVEL_OFFSET, level + 1)  # a layer the node doesn't have
     path.write_bytes(bytes(raw))
     with pytest.raises(RuntimeError, match="corrupt"):
         loaded = vecsearch.HNSWIndex.load(str(path))
