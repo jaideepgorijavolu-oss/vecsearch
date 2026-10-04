@@ -111,3 +111,37 @@ def test_delete_rejects_bad_ids(cls, bad):
         index.delete(bad)
     assert len(index) == 4
     assert index.delete(np.int64(1)) and len(index) == 3
+
+
+# ---- bools hidden inside mixed lists (np.asarray([True, 2]) silently becomes [1, 2]) ----
+
+MIXED_BOOL_IDS = [[True, 2], [1, False], [np.True_, 2], (2, True)]
+
+
+@pytest.mark.parametrize("ids", MIXED_BOOL_IDS + [np.array([True, False])])
+def test_add_rejects_bools_in_mixed_lists(ids):
+    index = vecsearch.HNSWIndex(2)
+    index.add(np.array([[0, 0]], dtype=np.float32), ids=[1])
+    with pytest.raises(TypeError):
+        index.add(np.array([[9, 9], [20, 20]], dtype=np.float32), ids=ids)
+    ids_out, dists = index.search(np.array([0, 0], dtype=np.float32), k=1)
+    assert ids_out[0, 0] == 1 and dists[0, 0] == 0.0  # vector 1 was not replaced
+    assert index.element_count == 1
+
+
+@pytest.mark.parametrize("flt", MIXED_BOOL_IDS + [np.array([True, False])])
+def test_filter_rejects_bools_in_mixed_lists(flt):
+    index = vecsearch.HNSWIndex(2)
+    index.add(np.eye(2, dtype=np.float32), ids=[1, 2])
+    with pytest.raises(TypeError):
+        index.search(np.ones(2, dtype=np.float32), k=1, filter=flt)
+
+
+@pytest.mark.parametrize("ids", [[1, 2], (1, 2), [np.int64(1), np.int32(2)],
+                                 np.array([1, 2], dtype=np.int64)])
+def test_integer_lists_and_arrays_still_work(ids):
+    index = vecsearch.HNSWIndex(2)
+    index.add(np.eye(2, dtype=np.float32), ids=ids)
+    assert index.search(np.eye(2, dtype=np.float32), k=1)[0][:, 0].tolist() == [1, 2]
+    got, _ = index.search(np.eye(2, dtype=np.float32)[0], k=2, filter=ids)
+    assert sorted(got[0].tolist()) == [1, 2]
