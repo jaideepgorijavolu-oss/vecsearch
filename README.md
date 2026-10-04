@@ -11,19 +11,20 @@ recall-vs-throughput curves.
 
 ![SIFT1M recall vs QPS](bench/ann/results/sift_recall_qps.png)
 
-Headline numbers (SIFT1M, M = 16, ef_construction = 200, recall@10 ≈ 0.96, laptop Ryzen 9 270
-in Eco power mode; full methodology and caveats in [docs/RESULTS.md](docs/RESULTS.md)):
+Headline numbers (SIFT1M, M = 16, ef_construction = 200, recall@10 ≈ 0.96, laptop Ryzen 9 270,
+Ultimate Performance power plan; full methodology and caveats in [docs/RESULTS.md](docs/RESULTS.md)):
 
 | | vecsearch | hnswlib | Faiss HNSW |
 |---|---:|---:|---:|
-| QPS, 1 thread | **5,834** | 5,188 | 4,740 |
-| QPS, 16 threads | 35,437 | 32,252 | **39,998** |
-| p99 latency (ms) | **0.32** | 0.45 | 0.39 |
-| build (s) | **64.5** | 75.0 | 75.4 |
+| QPS, 1 thread | **6,488** | 6,293 | 5,388 |
+| QPS, 16 threads | 35,149 | 34,255 | **42,215** |
+| p99 latency (ms) | **0.23** | 0.28 | 0.34 |
+| build (s) | **63.4** | 67.5 | 64.7 |
 
-vecsearch is fastest on one thread on both SIFT1M and GloVe-100, thanks to a batched
-software-prefetching search loop found by profiling (+21% QPS). Faiss scales better across 16
-threads; RESULTS.md discusses why that is not yet explained.
+vecsearch has the highest single-thread throughput and lowest tail latency on both SIFT1M and
+GloVe-100 (narrowly ahead of hnswlib on SIFT), thanks to a batched software-prefetching search
+loop found by profiling (+28% QPS). Faiss scales better across 16 threads; RESULTS.md discusses
+why that is not yet explained.
 
 ## Quickstart
 

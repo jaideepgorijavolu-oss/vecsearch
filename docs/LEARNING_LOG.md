@@ -244,13 +244,13 @@ That needs the bindings, so Phase 5 was done first.
   put the stalls on the first load of each vector and on the visited-list load.
 - Fix: process a neighbor list in passes (prefetch all visited marks; collect unvisited and
   prefetch their vectors; then compute), plus prefetch the next candidate's neighbor block. The
-  number of misses is the same, but they overlap: cycles/query −24%, QPS +21% (SIFT, 1 thread).
+  number of misses is the same, but they overlap: cycles/query −20%, QPS +28% (SIFT, 1 thread).
 - Prefetching only the *next* neighbor (hnswlib's approach) gained just ~5%: one distance
   computation (~20 ns) cannot hide a ~100 ns miss.
 
-**Honest results:** fastest single-thread on both datasets, fastest build; Faiss is ~11% ahead
-with 16 threads on SIFT and the cause is not yet measured. Laptop in Eco mode; one run per
-configuration with ~±5–10% noise.
+**Honest results** (Ultimate Performance rerun): highest single-thread QPS and lowest p99 on
+both datasets, but only ~3% ahead of hnswlib on SIFT (noise level); Faiss is ~20% ahead with 16
+threads on SIFT and the cause is not yet measured. One run per configuration, ~±5–10% noise.
 
 **Interview questions**
 
