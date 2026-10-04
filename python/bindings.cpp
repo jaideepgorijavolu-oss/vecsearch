@@ -67,11 +67,38 @@ Matrix as_matrix(const py::handle& obj, std::size_t dim, const char* what) {
 
 using Labels = py::array_t<std::int64_t, py::array::c_style>;
 
+// One id (delete, `in`): a Python or NumPy integer, not bool or float, in int64, not -1.
+std::int64_t as_label(const py::handle& obj) {
+  auto np = py::module_::import("numpy");
+  if (PyBool_Check(obj.ptr()) || py::isinstance(obj, np.attr("bool_")) ||
+      !PyIndex_Check(obj.ptr())) {
+    throw py::type_error("id must be an integer, got " +
+                         std::string(py::str(py::type::of(obj).attr("__name__"))));
+  }
+  py::int_ v = py::reinterpret_steal<py::int_>(PyNumber_Index(obj.ptr()));
+  int overflow = 0;
+  const long long id = PyLong_AsLongLongAndOverflow(v.ptr(), &overflow);
+  if (overflow != 0) throw py::value_error("id must fit in int64");
+  if (id == kNoId) throw py::value_error("id -1 is reserved");
+  return id;
+}
+
 // Ids must be genuine integers in int64 range, and never -1 (search uses -1 for "no result").
 // Floats, bools and strings are rejected instead of converted: forcecast would silently turn
 // 1.9 into 1, and since add() is an upsert that would overwrite vector 1.
 Labels as_labels(const py::handle& obj, const char* what) {
   auto np = py::module_::import("numpy");
+  // Lists and tuples: check every element with the single-id rules *before* NumPy sees them.
+  // np.asarray([True, 2]) would silently produce the integer array [1, 2].
+  if (py::isinstance<py::list>(obj) || py::isinstance<py::tuple>(obj)) {
+    auto seq = py::reinterpret_borrow<py::sequence>(obj);
+    Labels labels(static_cast<py::ssize_t>(seq.size()));
+    auto* out = labels.mutable_data();
+    py::ssize_t i = 0;
+    for (const auto item : seq) out[i++] = as_label(item);
+    return labels;
+  }
+  // NumPy arrays (and other array-likes): dtype checks below, no per-element Python loop.
   py::array arr = np.attr("asarray")(obj);
   if (arr.ndim() != 1) throw py::value_error(std::string(what) + " must be 1-D");
   if (arr.size() == 0) return Labels(0);  // np.asarray([]) is float64; an empty list is fine
@@ -90,22 +117,6 @@ Labels as_labels(const py::handle& obj, const char* what) {
     if (labels.data()[i] == kNoId) throw py::value_error(std::string(what) + ": id -1 is reserved");
   }
   return labels;
-}
-
-// One id (delete, `in`): a Python or NumPy integer, not bool or float, in int64, not -1.
-std::int64_t as_label(const py::handle& obj) {
-  auto np = py::module_::import("numpy");
-  if (PyBool_Check(obj.ptr()) || py::isinstance(obj, np.attr("bool_")) ||
-      !PyIndex_Check(obj.ptr())) {
-    throw py::type_error("id must be an integer, got " +
-                         std::string(py::str(py::type::of(obj).attr("__name__"))));
-  }
-  py::int_ v = py::reinterpret_steal<py::int_>(PyNumber_Index(obj.ptr()));
-  int overflow = 0;
-  const long long id = PyLong_AsLongLongAndOverflow(v.ptr(), &overflow);
-  if (overflow != 0) throw py::value_error("id must fit in int64");
-  if (id == kNoId) throw py::value_error("id -1 is reserved");
-  return id;
 }
 
 // Hands a SearchResult's buffers to NumPy without copying: the arrays own the result through
