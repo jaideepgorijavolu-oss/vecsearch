@@ -8,122 +8,122 @@
  "M": 16,
  "ef_construction": 200,
  "threads": 16,
- "build_seconds": 102.46949756400045,
- "rss_growth_bytes": 710057984,
+ "build_seconds": 80.1520346909997,
+ "rss_growth_bytes": 709894144,
  "reported_memory_bytes": null,
  "sweep": [
   {
    "ef": 10,
    "recall": 0.47576,
    "recall_1thread": 0.47576,
-   "qps_all_threads": 128151.96321204882,
-   "qps_1thread": 13298.234434364053
+   "qps_all_threads": 148966.35523344085,
+   "qps_1thread": 19396.75099650674
   },
   {
    "ef": 16,
    "recall": 0.56286,
    "recall_1thread": 0.56286,
-   "qps_all_threads": 92991.76058497968,
-   "qps_1thread": 9367.428959964493
+   "qps_all_threads": 110020.57373712993,
+   "qps_1thread": 14103.483537590415
   },
   {
    "ef": 24,
    "recall": 0.6313,
    "recall_1thread": 0.6313,
-   "qps_all_threads": 73652.35596029725,
-   "qps_1thread": 7275.471517090389
+   "qps_all_threads": 83385.5709191166,
+   "qps_1thread": 10584.059308694423
   },
   {
    "ef": 32,
    "recall": 0.67548,
    "recall_1thread": 0.67548,
-   "qps_all_threads": 46870.886932978916,
-   "qps_1thread": 6031.584234022756
+   "qps_all_threads": 68263.16926225195,
+   "qps_1thread": 8700.829606352721
   },
   {
    "ef": 48,
    "recall": 0.73145,
    "recall_1thread": 0.73145,
-   "qps_all_threads": 42960.35031170573,
-   "qps_1thread": 4325.482668942504
+   "qps_all_threads": 50464.850409147875,
+   "qps_1thread": 6356.190781848789
   },
   {
    "ef": 64,
    "recall": 0.76387,
    "recall_1thread": 0.76387,
-   "qps_all_threads": 35476.01649754882,
-   "qps_1thread": 3434.0292788690917
+   "qps_all_threads": 40774.4884105829,
+   "qps_1thread": 5088.276092318954
   },
   {
    "ef": 96,
    "recall": 0.80636,
    "recall_1thread": 0.80636,
-   "qps_all_threads": 25398.304013504196,
-   "qps_1thread": 2672.5697710723875
+   "qps_all_threads": 29360.852469581652,
+   "qps_1thread": 3583.7608852352664
   },
   {
    "ef": 128,
    "recall": 0.83218,
    "recall_1thread": 0.83218,
-   "qps_all_threads": 20235.07180038052,
-   "qps_1thread": 2130.267706999388
+   "qps_all_threads": 23235.973350253407,
+   "qps_1thread": 2822.3662807521155
   },
   {
    "ef": 192,
    "recall": 0.86281,
    "recall_1thread": 0.86281,
-   "qps_all_threads": 13833.32470802388,
-   "qps_1thread": 1477.684510710395
+   "qps_all_threads": 16444.51297201641,
+   "qps_1thread": 1989.313512844749
   },
   {
    "ef": 256,
    "recall": 0.88265,
    "recall_1thread": 0.88265,
-   "qps_all_threads": 10902.678417507479,
-   "qps_1thread": 1196.5135567289892
+   "qps_all_threads": 12828.870895688147,
+   "qps_1thread": 1549.362837989124
   },
   {
    "ef": 384,
    "recall": 0.9067,
    "recall_1thread": 0.9067,
-   "qps_all_threads": 7390.055130975088,
-   "qps_1thread": 818.3707611829645
+   "qps_all_threads": 8821.000890017789,
+   "qps_1thread": 1067.754778831035
   },
   {
    "ef": 512,
    "recall": 0.92124,
    "recall_1thread": 0.92124,
-   "qps_all_threads": 5596.177242367745,
-   "qps_1thread": 613.1043586349676
+   "qps_all_threads": 6761.357216187377,
+   "qps_1thread": 818.4293836286602
   },
   {
    "ef": 768,
    "recall": 0.93991,
    "recall_1thread": 0.93991,
-   "qps_all_threads": 3671.270123426358,
-   "qps_1thread": 408.74320255768043
+   "qps_all_threads": 4390.786978532692,
+   "qps_1thread": 555.4243311573651
   },
   {
    "ef": 1024,
    "recall": 0.9514,
    "recall_1thread": 0.9514,
-   "qps_all_threads": 2592.885792372146,
-   "qps_1thread": 308.09740860306874
+   "qps_all_threads": 2915.7610515727915,
+   "qps_1thread": 420.91002855501824
   },
   {
    "ef": 1536,
    "recall": 0.96483,
    "recall_1thread": 0.96483,
-   "qps_all_threads": 1546.5838960946328,
-   "qps_1thread": 191.44952355897004
+   "qps_all_threads": 1719.8817305233915,
+   "qps_1thread": 268.4208691191503
   }
  ],
  "latency": {
   "ef": 1024,
   "recall": 0.9514,
-  "p50_ms": 3.4243015,
-  "p99_ms": 6.99387332,
-  "mean_ms": 3.6676248575,
+  "p50_ms": 2.578781,
+  "p99_ms": 3.7585740299999997,
+  "mean_ms": 2.581813446,
   "queries": 2000
  },
  "machine": {

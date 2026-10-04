@@ -12,7 +12,7 @@ each table. Anything not yet measured is marked TBD.
 | Environment | Docker Desktop, WSL2 VM (Linux 6.18.33.2-microsoft-standard-WSL2), 16 vCPUs, 7.9 GB RAM visible |
 | OS image | Ubuntu 24.04 (`docker/dev.Dockerfile`) |
 | Compiler | GCC 13.3.0, `-O3` (CMake Release) |
-| Power | Windows power mode **Eco**. Every engine and every phase ran under this same setting, so comparisons are like for like; absolute QPS and latency would be higher in a performance mode. |
+| Power | Windows **Ultimate Performance** power plan, nothing else CPU-heavy running (checked before the run). Phases 2 and 4 were rerun this way on 2026-10-03; the Phase 3 and Phase 6 numbers are from earlier runs in **Eco** mode and are lower than this machine can do. |
 
 Caveats: this is a laptop, so clocks depend on power and temperature (the benchmark library
 reports a nominal 3993 MHz). Everything runs inside a WSL2 virtual machine, which adds a little
@@ -49,45 +49,45 @@ Two scenarios:
 
 | dim | scalar | autovec_O3_native | autovec_O3_native_fastmath | avx2 |
 |---:|---:|---:|---:|---:|
-| 32 | 13.4 (19.1) | 11.5 (22.3) | 2.8 (90.3) | 3.2 (80.5) |
-| 64 | 35.7 (14.4) | 29.6 (17.4) | 4.0 (127.3) | 4.1 (125.8) |
-| 128 | 73.7 (13.9) | 71.5 (14.3) | 7.0 (146.9) | 6.3 (164.2) |
-| 384 | 301.4 (10.2) | 297.1 (10.3) | 18.3 (168.0) | 16.2 (189.4) |
-| 768 | 648.1 (9.5) | 656.6 (9.4) | 39.9 (154.0) | 32.5 (189.1) |
-| 1536 | 1333.6 (9.3) | 1340.4 (9.2) | 82.3 (150.0) | 62.5 (196.7) |
+| 32 | 9.0 (28.5) | 7.4 (34.5) | 1.8 (139.0) | 2.0 (128.2) |
+| 64 | 22.4 (22.9) | 19.4 (26.4) | 2.7 (191.8) | 2.6 (194.3) |
+| 128 | 47.9 (21.4) | 47.0 (21.8) | 4.4 (230.5) | 4.2 (244.0) |
+| 384 | 199.7 (15.4) | 195.6 (15.7) | 12.0 (255.1) | 10.6 (288.7) |
+| 768 | 428.0 (14.4) | 426.5 (14.5) | 25.9 (236.8) | 20.8 (298.0) |
+| 1536 | 917.5 (13.4) | 876.8 (14.0) | 50.8 (241.9) | 40.9 (300.1) |
 
 ### hot / dot: ns per call (GB/s)
 
 | dim | scalar | autovec_O3_native | autovec_O3_native_fastmath | avx2 |
 |---:|---:|---:|---:|---:|
-| 32 | 12.3 (20.8) | 11.3 (22.7) | 2.6 (98.6) | 2.8 (91.3) |
-| 64 | 33.0 (15.5) | 29.8 (17.3) | 3.9 (131.5) | 3.9 (132.1) |
-| 128 | 71.6 (14.3) | 76.0 (13.5) | 6.5 (158.6) | 5.6 (181.8) |
-| 384 | 297.5 (10.3) | 305.4 (10.1) | 17.8 (172.2) | 16.1 (190.8) |
-| 768 | 641.7 (9.6) | 652.2 (9.4) | 39.5 (155.9) | 31.8 (193.2) |
-| 1536 | 1326.3 (9.3) | 1362.3 (9.1) | 85.1 (144.4) | 63.7 (193.0) |
+| 32 | 8.1 (31.6) | 7.0 (36.6) | 1.6 (155.8) | 1.9 (138.3) |
+| 64 | 21.9 (23.3) | 18.7 (27.4) | 2.4 (209.1) | 2.4 (211.1) |
+| 128 | 45.3 (22.6) | 45.6 (22.4) | 4.1 (246.9) | 3.8 (272.5) |
+| 384 | 193.7 (15.9) | 193.5 (15.9) | 11.8 (260.9) | 10.4 (294.5) |
+| 768 | 420.7 (14.6) | 420.1 (14.6) | 25.8 (238.3) | 20.4 (300.6) |
+| 1536 | 871.1 (14.1) | 886.2 (13.9) | 52.3 (235.0) | 40.8 (301.1) |
 
 ### scan / l2: ns per call (GB/s)
 
 | dim | scalar | autovec_O3_native | autovec_O3_native_fastmath | avx2 |
 |---:|---:|---:|---:|---:|
-| 32 | 14.3 (9.0) | 12.1 (10.6) | 3.9 (33.0) | 4.2 (30.6) |
-| 64 | 36.4 (7.0) | 30.7 (8.4) | 7.7 (33.1) | 9.6 (26.6) |
-| 128 | 75.3 (6.8) | 75.8 (6.8) | 17.2 (29.7) | 18.0 (28.4) |
-| 384 | 308.3 (5.0) | 305.8 (5.0) | 45.1 (34.0) | 48.1 (31.9) |
-| 768 | 712.1 (4.3) | 662.9 (4.6) | 86.2 (35.7) | 98.3 (31.3) |
-| 1536 | 1352.0 (4.5) | 1399.7 (4.4) | 196.2 (31.3) | 229.9 (26.7) |
+| 32 | 9.6 (13.4) | 8.0 (16.0) | 3.9 (33.1) | 3.9 (32.6) |
+| 64 | 23.8 (10.8) | 20.4 (12.5) | 7.6 (33.7) | 7.9 (32.4) |
+| 128 | 50.4 (10.2) | 48.9 (10.5) | 17.4 (29.4) | 16.3 (31.4) |
+| 384 | 203.0 (7.6) | 201.0 (7.6) | 46.3 (33.2) | 45.3 (33.9) |
+| 768 | 435.8 (7.0) | 432.8 (7.1) | 85.2 (36.1) | 87.1 (35.3) |
+| 1536 | 894.0 (6.9) | 895.4 (6.9) | 194.5 (31.6) | 196.5 (31.3) |
 
 ### scan / dot: ns per call (GB/s)
 
 | dim | scalar | autovec_O3_native | autovec_O3_native_fastmath | avx2 |
 |---:|---:|---:|---:|---:|
-| 32 | 15.7 (8.2) | 11.9 (10.8) | 3.8 (33.9) | 3.9 (32.4) |
-| 64 | 35.4 (7.2) | 31.8 (8.1) | 7.1 (35.8) | 7.4 (34.8) |
-| 128 | 70.7 (7.2) | 75.4 (6.8) | 14.8 (34.7) | 15.3 (33.4) |
-| 384 | 302.5 (5.1) | 308.6 (5.0) | 52.1 (29.5) | 51.5 (30.4) |
-| 768 | 643.7 (4.8) | 663.7 (4.6) | 96.0 (32.0) | 96.8 (31.7) |
-| 1536 | 1354.0 (4.6) | 1382.4 (4.5) | 175.8 (35.0) | 186.2 (33.0) |
+| 32 | 9.0 (14.3) | 7.5 (17.0) | 3.4 (38.1) | 3.4 (37.2) |
+| 64 | 22.9 (11.2) | 20.1 (12.8) | 6.9 (37.2) | 7.0 (36.4) |
+| 128 | 47.3 (10.9) | 47.9 (10.7) | 14.8 (34.9) | 15.0 (34.3) |
+| 384 | 199.9 (7.7) | 200.5 (7.7) | 53.4 (28.7) | 52.1 (29.5) |
+| 768 | 434.4 (7.1) | 440.0 (7.1) | 99.5 (30.9) | 99.7 (30.8) |
+| 1536 | 897.2 (6.8) | 901.1 (6.8) | 175.8 (35.1) | 175.4 (35.1) |
 
 ### Discussion
 
@@ -95,7 +95,7 @@ Two scenarios:
   disassembly) and runs at the scalar speed. Floating-point addition is not associative, so
   without permission to reorder the sum, the compiler cannot split it across vector lanes.
 - **With `-ffast-math` the compiler gets close.** It vectorizes with 512-bit AVX-512 registers
-  and is 11–34% slower than the hand kernel for dim ≥ 128 when data is in L1, and equal or
+  and is 5–25% slower than the hand kernel for dim ≥ 128 when data is in L1, and equal or
   slightly faster at dim 32 and 64, where the hand kernel's main loop runs only once or twice and
   its fixed costs (zeroing four accumulators, the horizontal sum) dominate. The disassembly shows
   why it is not faster despite 2× wider registers: its main loop has a *single* accumulator
@@ -103,12 +103,13 @@ Two scenarios:
   kernel uses four independent FMA accumulators. `-ffast-math` is not an option for the library
   anyway: it changes NaN/infinity semantics for the whole translation unit.
 - **The hand AVX2 kernel is ~20× faster than scalar** when data is in L1 (e.g. dim 768:
-  648 → 32.5 ns for L2), reaching ~190 GB/s of L1 load bandwidth.
-- **Once data comes from DRAM, every vectorized kernel hits the same wall**: ~27–36 GB/s
+  428 → 20.8 ns for L2), reaching ~300 GB/s of L1 load bandwidth.
+- **Once data comes from DRAM, every vectorized kernel hits the same wall**: ~29–36 GB/s
   single-thread streaming bandwidth, for all dims. In the scan test the hand AVX2 kernel and the
-  fast-math auto-vectorized kernel are within ~15% of each other, and the auto-vectorized one is
-  sometimes ahead (e.g. L2 at dim 768: 86 vs 98 ns); the arithmetic is no longer what limits
-  them. The scalar kernel is still compute bound (4–9 GB/s), so SIMD helps 3–7× there, not 20×.
+  fast-math auto-vectorized kernel are within ~7% of each other, and the auto-vectorized one is
+  sometimes ahead (e.g. L2 at dim 768: 85.2 vs 87.1 ns); the arithmetic is no longer what
+  limits them. The scalar kernel is still compute bound (7–13 GB/s), so SIMD helps 2.5–5×
+  there, not 20×.
 - **Implication for HNSW**: graph search touches vectors in an unpredictable order, so each
   distance computation is likely a cache miss (latency bound, worse than streaming). SIMD makes
   the arithmetic nearly free; the remaining cost is memory access. Phase 4 measures this.
@@ -172,8 +173,8 @@ Log of the run used here: `bench/ann/results/run_all.log`.
   engine reaches recall@10 ≥ 0.95. Includes the Python call overhead (a few µs, the same for
   all).
 - Memory: growth of the process RSS during the build (vectors + graph + allocator overhead).
-- One run per configuration on a laptop in Eco mode (see Hardware). Comparing the two full runs
-  made during development, run-to-run noise is roughly ±5% for single-thread numbers and up to
+- One run per configuration on a laptop (Ultimate Performance plan, see Hardware). Comparing the full runs made
+  during development, run-to-run noise is roughly ±5% for single-thread numbers and up to
   ±10% for 16-thread numbers (a 16-thread batch lasts only 0.1–5 s). Smaller differences are not
   meaningful.
 
@@ -184,23 +185,23 @@ Log of the run used here: `bench/ann/results/run_all.log`.
 
 | engine | build (s) | RSS growth (MiB) | QPS @0.95, 16 threads (ef) | QPS @0.95, 1 thread | QPS @0.99, 1 thread | p50 / p99 latency @0.95 (ms) |
 |---|---:|---:|---:|---:|---:|---:|
-| vecsearch | 64.5 | 726 | 35,437 (64) | 5,834 | 2,286 | 0.179 / 0.316 |
-| vecsearch-noprefetch | 69.5 | 726 | 32,762 (64) | 4,833 | 1,817 | 0.214 / 0.391 |
-| hnswlib | 75.0 | 753 | 32,252 (64) | 5,188 | 2,096 | 0.204 / 0.453 |
-| faiss | 75.4 | 679 | 39,998 (64) | 4,740 | 2,538 | 0.237 / 0.393 |
+| vecsearch | 63.4 | 726 | 35,149 (64) | 6,488 | 2,609 | 0.158 / 0.234 |
+| vecsearch-noprefetch | 74.1 | 726 | 32,174 (64) | 5,086 | 2,099 | 0.193 / 0.308 |
+| hnswlib | 67.5 | 753 | 34,255 (64) | 6,293 | 2,483 | 0.169 / 0.279 |
+| faiss | 64.7 | 679 | 42,215 (64) | 5,388 | 2,951 | 0.208 / 0.340 |
 
-"@0.95" is the first ef in the sweep with recall ≥ 0.95: ef = 64 for all four (recall 0.963,
-0.963, 0.964, 0.968). "@0.99" is the first ef with recall ≥ 0.99: 192 for vecsearch and
+"@0.95" is the first ef in the sweep with recall ≥ 0.95: ef = 64 for all four (recall 0.9635,
+0.9635, 0.9638, 0.9675). "@0.99" is the first ef with recall ≥ 0.99: 192 for vecsearch and
 hnswlib, 128 for Faiss, whose recall at equal ef is slightly higher.
 
 ### GloVe-100 (100-d, angular), at recall@10 ≈ 0.95
 
 | engine | build (s) | RSS growth (MiB) | QPS @0.95, 16 threads (ef) | QPS @0.95, 1 thread | p50 / p99 latency @0.95 (ms) |
 |---|---:|---:|---:|---:|---:|
-| vecsearch | 88.5 | 784 | 2,784 (1024) | 415 | 2.45 / 3.77 |
-| vecsearch-noprefetch | 100.7 | 785 | 2,597 (1024) | 332 | 3.10 / 5.07 |
-| hnswlib | 106.9 | 761 | 2,519 (1024) | 352 | 3.05 / 7.18 |
-| faiss | 102.5 | 677 | 2,593 (1024) | 308 | 3.42 / 6.99 |
+| vecsearch | 81.3 | 785 | 3,099 (1024) | 530 | 1.99 / 2.79 |
+| vecsearch-noprefetch | 81.4 | 785 | 3,021 (1024) | 436 | 2.35 / 3.18 |
+| hnswlib | 93.4 | 762 | 2,680 (1024) | 490 | 2.13 / 2.89 |
+| faiss | 80.2 | 677 | 2,916 (1024) | 421 | 2.58 / 3.76 |
 
 GloVe is much harder than SIFT: with M = 16 every engine needs ef ≈ 1024 for 0.95 recall@10,
 and none reaches 0.99 in the sweep, which stops at ef = 1536 with recall ≈ 0.97. The full sweeps
@@ -211,17 +212,12 @@ and none reaches 0.99 in the sweep, which stops at ef = 1536 with recall ≈ 0.9
 Command: `python3 bench/ann/profile.py --ef 64 --seconds 20` (run by `make bench`; needs Linux
 `perf`, and in Docker `--privileged`). `bench/ann/profile_search` searches all SIFT1M queries on
 one thread in a loop; the counters of a run that only loads the index are subtracted, and the
-rest is divided by the number of queries.
+rest is divided by the number of queries. Output: `bench/ann/results/profile.md`.
 
-| prefetch | cycles/query | instructions/query | IPC | L1d misses/query | LLC misses/query | branch misses/query |
-|---|---:|---:|---:|---:|---:|---:|
-| off | 738,142 | 233,448 | 0.32 | 15,491 | 13,462 | 1,875 |
-| on | 559,941 | 306,559 | 0.55 | 16,497 | 14,095 | 2,031 |
-
-`profile.md` also has a QPS column from a separate 5-second run. In this run it came out as 4,780
-vs 4,805, which disagrees with the cycle counts and with the sweep above. A single 5-second run
-is the least reliable number here; the 20-second counter runs and the best-of-3 sweeps both show
-about 20% for prefetching.
+| prefetch | QPS | cycles/query | instructions/query | IPC | L1d misses/query | LLC misses/query | branch misses/query |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| off | 5,159 | 924,154 | 234,959 | 0.25 | 15,354 | 13,283 | 1,906 |
+| on | 6,569 | 742,074 | 307,370 | 0.41 | 16,337 | 14,050 | 2,034 |
 
 `perf record` (sampling, prefetch off, during development): ~51% of cycles in the AVX2 `l2_sq`
 kernel and ~43% in the layer-0 search loop (inlined into the search lambda). `perf annotate`
@@ -232,8 +228,8 @@ showed:
 - inside the search loop, ~17% of its samples right after `cmp %dx,(%rax)`, the load of
   `visited.marks[id]`, a random 2-byte read from a 2 MB array: another cache miss per neighbor.
 
-**Reading the profile.** IPC 0.3 on a core that can retire 4+ instructions per cycle means the
-search is almost always stalled on memory. ~13,500 last-level cache misses per query at ef = 64
+**Reading the profile.** IPC 0.25 on a core that can retire 4+ instructions per cycle means the
+search is almost always stalled on memory. ~13,300 last-level cache misses per query at ef = 64
 is about one DRAM miss per cache line of every vector visited (a 128-d vector is 8 lines). Each
 neighbor was a chain: load its visited mark (miss), then its vector (miss), then compute, and the
 next neighbor started only after that. Phase 2 had already shown that the kernel arithmetic is
@@ -241,54 +237,59 @@ nearly free; the time is DRAM latency, paid one miss at a time.
 
 ### Optimization made because of the profile: batched software prefetching
 
-`search_layer` now processes an expanded node's neighbor list in three passes: (1) prefetch the
+`search_layer` processes an expanded node's neighbor list in three passes: (1) prefetch the
 visited marks of all neighbors; (2) test-and-set them, collect the unvisited ones, and prefetch
 every cache line of each unvisited neighbor's vector; (3) compute the distances. It also
 prefetches the neighbor block of the next candidate (the new heap top) as soon as the current
-one is popped. The misses still happen (LLC misses per query: 13.5k vs 14.1k) but they overlap
-instead of queueing: cycles per query −24%, IPC 0.32 → 0.55.
+one is popped. The misses still happen (LLC misses per query: 13.3k vs 14.1k) but they overlap
+instead of queueing: cycles per query −20%, IPC 0.25 → 0.41.
 
 Before/after, same build and graph, `prefetch` toggled at runtime:
 
 | | prefetch off | prefetch on | change |
 |---|---:|---:|---:|
-| SIFT1M, 1 thread, ef 64 (recall 0.963): QPS | 4,833 | 5,834 | +21% |
-| SIFT1M: p50 / p99 latency (ms) | 0.214 / 0.391 | 0.179 / 0.316 | −16% / −19% |
-| GloVe-100, 1 thread, ef 1024 (recall 0.956): QPS | 332 | 415 | +25% |
-| GloVe-100: p50 / p99 latency (ms) | 3.10 / 5.07 | 2.45 / 3.77 | −21% / −26% |
-| SIFT1M, 16 threads, ef 64: QPS | 32,762 | 35,437 | +8% |
+| SIFT1M, 1 thread, ef 64 (recall 0.9635): QPS | 5,086 | 6,488 | +28% |
+| SIFT1M: p50 / p99 latency (ms) | 0.193 / 0.308 | 0.158 / 0.234 | −18% / −24% |
+| GloVe-100, 1 thread, ef 1024 (recall 0.955): QPS | 436 | 530 | +22% |
+| GloVe-100: p50 / p99 latency (ms) | 2.35 / 3.18 | 1.99 / 2.79 | −15% / −12% |
+| SIFT1M, 16 threads, ef 64: QPS | 32,174 | 35,149 | +9% |
 
 A first, simpler version (prefetch only the *next* neighbor's vector while computing the current
-one, the same strategy as hnswlib's search loop) gained only ~5% (4,338 → 4,555 QPS,
-`bench/ann/results/profile_v1_next_prefetch.md`): one distance computation (~20 ns) is too short
-to hide a ~100 ns DRAM miss. Prefetching a whole neighbor list at once gives the memory system
-10–30 independent misses to work on in parallel.
+one, the same strategy as hnswlib's search loop) gained only ~5% in an earlier Eco-mode run
+(4,338 → 4,555 QPS, `bench/ann/results/profile_v1_next_prefetch.md`): one distance computation
+(~20 ns) is too short to hide a ~100 ns DRAM miss. Prefetching a whole neighbor list at once
+gives the memory system 10–30 independent misses to work on in parallel.
 
 ### Analysis: where vecsearch wins and loses
 
-- **On one thread, vecsearch is the fastest on both datasets.** At recall ≈ 0.95: SIFT1M 5,834
-  QPS vs hnswlib 5,188 (+12%) and Faiss 4,740 (+23%); GloVe 415 vs 352 (+18%) and 308 (+35%).
-  Tail latency is lower too (SIFT p99 0.32 ms vs 0.45 / 0.39). The graphs are nearly identical
-  (same algorithm and parameters; recall at equal ef matches hnswlib to about the third
-  decimal), so the difference is the search loop. With prefetching off, vecsearch is slightly
-  *slower* than hnswlib (4,833 vs 5,188): the whole advantage is the batched prefetch, consistent
-  with the profile.
-- **With 16 threads on SIFT1M, Faiss is the fastest.** vecsearch reaches 35,437 QPS, 89% of
-  Faiss (39,998), and 10% more than hnswlib (32,252). On GloVe at the high ef needed there, the
-  three are within ~10% (2,784 / 2,519 / 2,593). From 1 to 16 threads on SIFT, vecsearch scales
-  6.1×, hnswlib 6.2×, Faiss 8.4×. All scale sub-linearly: 16 threads share 8 physical cores
-  (SMT) and one memory system, and HNSW search is memory-latency bound. **Why Faiss scales better
-  is not established by these measurements** (no multi-threaded profile was taken). Hypotheses
-  to test next: Faiss computes neighbor distances four at a time, which may suit two SMT threads
-  sharing a core better than long prefetch bursts; and vecsearch's bursts of prefetches from two
+- **On one thread, vecsearch is the fastest on both datasets, but on SIFT1M only narrowly.**
+  At recall ≈ 0.95: SIFT1M 6,488 QPS vs hnswlib 6,293 (+3%, inside run-to-run noise) and Faiss
+  5,388 (+20%); GloVe 530 vs 490 (+8%) and 421 (+26%). Tail latency is lowest on both (SIFT p99
+  0.23 ms vs 0.28 / 0.34; GloVe 2.79 ms vs 2.89 / 3.76). The graphs are nearly identical (same
+  algorithm and parameters; recall at equal ef matches hnswlib to the third decimal), so the
+  difference is the search loop. Without prefetching, vecsearch is clearly slower than hnswlib
+  (5,086 vs 6,293 on SIFT): the batched prefetch is what makes it competitive.
+- **The SIFT lead over hnswlib shrank compared with the earlier Eco-mode run** (+12% there,
+  +3% here). In Ultimate mode hnswlib's single-thread QPS rose 21% (5,188 → 6,293) and
+  vecsearch's 11% (5,834 → 6,488). Not investigated; a plausible reason is that higher clocks
+  help hnswlib's more compute-bound loop more than they help a loop already limited by memory
+  parallelism. Only single runs exist per mode, so treat a few percent either way as noise.
+- **With 16 threads on SIFT1M, Faiss is the fastest.** vecsearch reaches 35,149 QPS, 83% of
+  Faiss (42,215), and is level with hnswlib (34,255, +3%). On GloVe at ef = 1024, vecsearch is
+  fastest (3,099 vs 2,680 / 2,916). From 1 to 16 threads on SIFT, vecsearch scales 5.4×,
+  hnswlib 5.4×, Faiss 7.8×. All scale sub-linearly: 16 threads share 8 physical cores (SMT) and
+  one memory system, and HNSW search is memory-latency bound. **Why Faiss scales better is not
+  established by these measurements** (no multi-threaded profile was taken). Hypotheses to test
+  next: Faiss computes neighbor distances four at a time, which may suit two SMT threads sharing
+  a core better than long prefetch bursts; and vecsearch's bursts of prefetches from two
   hyperthreads may oversubscribe the core's shared miss buffers (which would also explain why
-  prefetching gains +21% on 1 thread but only +8% on 16). A `perf stat` of the 16-thread run
-  and a run with 8 threads (one per core) would separate these.
-- **Faiss has slightly higher recall at equal ef** (SIFT, ef 64: 0.968 vs 0.963). Its
-  single-thread recall-vs-QPS curve is still below vecsearch's on both datasets.
-- **Build time:** vecsearch builds fastest (SIFT 64.5 s vs 75.0 / 75.4; GloVe 88.5 s vs 106.9 /
-  102.5). Construction runs the same `search_layer`, so it gets the same prefetching benefit
-  (the no-prefetch build takes 69.5 s / 100.7 s).
+  prefetching gains +28% on 1 thread but only +9% on 16). A `perf stat` of the 16-thread run and
+  a run with 8 threads (one per core) would separate these.
+- **Faiss has slightly higher recall at equal ef** (SIFT, ef 64: 0.968 vs 0.964), and reaches
+  0.99 at a lower ef, so its single-thread QPS at 0.99 is the highest (2,951 vs 2,609 / 2,483).
+- **Build time:** within a few percent for vecsearch and Faiss (SIFT 63.4 s vs 64.7; GloVe
+  81.3 vs 80.2), hnswlib slower (67.5 / 93.4 s). Construction runs the same `search_layer`, so
+  it benefits from prefetching on SIFT (the no-prefetch build takes 74.1 s).
 - **Memory:** Faiss uses the least (SIFT: 679 MiB vs 726 for vecsearch and 753 for hnswlib). Of
   vecsearch's 726 MiB, 488 MiB are the vectors (1M × 128 floats) and 126 MiB the layer-0 graph
   (1M × 33 uint32); the rest is labels (8 bytes per node), the label hash map, and per-node
@@ -365,15 +366,12 @@ somewhere between 50% and 10% selectivity, so a real system should switch strate
 ## Resume bullets (numbers from this file)
 
 - Implemented an HNSW approximate nearest neighbor index from scratch in C++20 with
-  hand-written AVX2/NEON distance kernels and multithreaded search, reaching 5,834 QPS on one
-  thread at 0.963 recall@10 on SIFT1M (112% of hnswlib's and 123% of Faiss's single-thread
-  throughput at equal parameters; 89% of Faiss with 16 threads).
-- Profiled the search hot path with `perf` (IPC 0.32, ~13.5k LLC misses per query), identified
+  hand-written AVX2/NEON distance kernels and multithreaded search, reaching 6,488 QPS on one
+  thread at 0.96 recall@10 on SIFT1M (on par with hnswlib, 20% above Faiss) and the lowest p99
+  latency of the three (0.23 ms).
+- Profiled the search hot path with `perf` (IPC 0.25, ~13k LLC misses per query), identified
   serialized DRAM misses on vector and visited-list loads, and added batched software
-  prefetching, improving single-thread throughput by 21% and cutting p99 latency by 19%.
+  prefetching, improving single-thread throughput by 28% and cutting p99 latency by 24%.
 - Exposed the engine through zero-copy pybind11 bindings (GIL released) and a Dockerized
-  FastAPI service with metadata-filtered search, sustaining ~990 req/s with p99 29 ms at 16
-  concurrent clients; measured that ~84% of single-request latency is HTTP/Python overhead, not
-  the engine.
-
-(Measured on a laptop in Eco power mode; see Hardware.)
+  FastAPI service with metadata-filtered search and strict input validation, sustaining ~990
+  req/s with p99 29 ms at 16 concurrent clients (Eco-mode measurement).
