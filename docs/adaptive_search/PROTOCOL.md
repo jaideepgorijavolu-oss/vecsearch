@@ -148,3 +148,26 @@ Publishing: local only until the final handoff.
   mean layer-0 distance evaluations whose validation recall@10 is ≥ the target (simulated
   from traces for cap/learned, then confirmed by real runs; real runs for fixed ef and patience).
   Distance counts are layer 0 only; greedy descent is identical for every method.
+
+**A3 (2026-10-07, after the SIFT results, before any GloVe evaluation). GloVe-100 and multithread.**
+The user asked to continue with GloVe and multithreaded runs.
+- Data: ann-benchmarks `glove-100-angular`. There is no learn set. Sampling rule: 100,000 rows of
+  `train` drawn without replacement (seed 0) become training queries and are **removed from the
+  indexed base** (1,083,514 rows), so no training query can match itself. Training rows equal to a
+  val/test query, a base row or another training row are dropped. The 10k test queries split
+  5,000/5,000 (seed 0). The index uses vecsearch's cosine metric (normalizes on insert and per
+  query), which ranks exactly like angular distance. Ground truth is recomputed exactly
+  (FlatIndex cosine) against the reduced base. The legacy GloVe results used the full train set
+  and are not comparable.
+- Snapshot: M 16, efc 200, seed 100, built on 1 thread.
+- Grids: ef_max {512, 1024, 2048}; checkpoint {250, 500, 1000}; fixed ef 16 values from 32 to 2048;
+  patience ef {256, 512, 1024, 2048} × N {5 … 320} (12 values). Targets {0.80, 0.90, 0.95}, since
+  legacy GloVe reaches ~0.97 at ef 1536 and 0.99 is not attainable in a reasonable budget. A
+  target infeasible on validation is dropped and reported. Same models, features and selection
+  rule as SIFT.
+- Timing: 3 timed passes, not 5, because GloVe queries cost ~10× more. Fixed-ef evaluation counts
+  come from an untimed run.
+- Multithread (both datasets): each matched config, all 5k test queries in one batch call on 16
+  threads, best of 5 runs, results checked equal to the single-thread ones. This measures
+  throughput, not latency.
+- No stress condition for GloVe (the SIFT rebuilt-graph check is the predefined one).

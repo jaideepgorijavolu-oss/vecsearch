@@ -25,27 +25,40 @@ import time
 import numpy as np
 
 K = 10
-EF_MAX = [128, 256, 512]
-CHECKPOINTS = [100, 200, 400]
-TARGETS = [0.90, 0.95, 0.99]
-FIXED_EF = [10, 12, 14, 16, 20, 24, 28, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 256,
-            320, 384, 512]
-PATIENCE_EF = [64, 128, 256, 512]
-PATIENCE_N = [2, 3, 4, 6, 8, 10, 12, 16, 20, 25, 30, 40, 50, 65, 80]
-PASSES = 5
+DS = os.environ.get("DATASET", "sift")
+# Grids per dataset (PROTOCOL.md A2 for SIFT, A3 for GloVe). GloVe needs ~10x more work per query.
+GRIDS = {
+    "sift": dict(
+        metric="l2", ef_max=[128, 256, 512], checkpoints=[100, 200, 400], targets=[0.90, 0.95, 0.99],
+        fixed_ef=[10, 12, 14, 16, 20, 24, 28, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 256,
+                  320, 384, 512],
+        patience_ef=[64, 128, 256, 512],
+        patience_n=[2, 3, 4, 6, 8, 10, 12, 16, 20, 25, 30, 40, 50, 65, 80], passes=5),
+    "glove": dict(
+        metric="cosine", ef_max=[512, 1024, 2048], checkpoints=[250, 500, 1000],
+        targets=[0.80, 0.90, 0.95],
+        fixed_ef=[32, 48, 64, 96, 128, 192, 256, 320, 384, 512, 640, 768, 1024, 1280, 1536, 2048],
+        patience_ef=[256, 512, 1024, 2048],
+        patience_n=[5, 10, 15, 20, 30, 40, 60, 80, 120, 160, 240, 320], passes=3),
+}[DS]
+METRIC = GRIDS["metric"]
+EF_MAX, CHECKPOINTS, TARGETS = GRIDS["ef_max"], GRIDS["checkpoints"], GRIDS["targets"]
+FIXED_EF, PATIENCE_EF, PATIENCE_N = GRIDS["fixed_ef"], GRIDS["patience_ef"], GRIDS["patience_n"]
+PASSES = GRIDS["passes"]
 F = 9  # kNumTerminationFeatures
 FEATURE_NAMES = ["log_entry", "log_d1", "log_dk", "d1/entry", "dk/entry", "dk/d1", "cand/dk",
                  "stale_frac", "topk_changes"]
 
 DATA = pathlib.Path(os.environ.get("VECSEARCH_DATA", "/data")) / "adaptive"
 TOOL = "build/bench/bench/ann/adaptive_eval"
-INDEX = DATA / "sift_m16_efc200_s100.hnsw"
+INDEX = DATA / f"{DS}_m16_efc200_s100.hnsw"
+SUB = "" if DS == "sift" else f"_{DS}"  # sift keeps its original directory names
 
 
 # ---------------------------------------------------------------- io
 
 def fbin(name):
-    return DATA / f"sift_{name}.fbin"
+    return DATA / f"{DS}_{name}.fbin"
 
 
 def read_fbin(path):
@@ -54,7 +67,7 @@ def read_fbin(path):
 
 
 def read_gt(split):
-    path = DATA / f"sift_{split}.gt"
+    path = DATA / f"{DS}_{split}.gt"
     nq, k = np.fromfile(path, dtype=np.uint64, count=2).astype(int)
     ids = np.fromfile(path, dtype=np.int64, offset=16, count=nq * k).reshape(nq, k)
     dists = np.fromfile(path, dtype=np.float32, offset=16 + 8 * nq * k).reshape(nq, k)
@@ -74,7 +87,7 @@ def read_trace(path):
 
 
 def trace_path(split, ef, c):
-    return DATA / "traces" / f"{split}_ef{ef}_c{c}.trace"
+    return DATA / f"traces{SUB}" / f"{split}_ef{ef}_c{c}.trace"
 
 
 def sha256(path):
@@ -250,7 +263,7 @@ def write_model(model, path, checkpoint, query_dim):
 
 def run_configs(run_dir, name, split, configs, passes, log):
     """configs: list of (name, kind, ef, max_evals, patience, model_path, mult)."""
-    out = DATA / "runs" / name
+    out = DATA / f"runs{SUB}" / name
     out.mkdir(parents=True, exist_ok=True)
     cfg = out / "configs.txt"
     cfg.write_text("".join(" ".join(str(x) for x in c) + "\n" for c in configs))
@@ -277,7 +290,11 @@ def load_runs(out, names, passes):
 def recall_rows(ids, gt_ids, gt_d, base, queries):
     by_id = np.array([len(set(a) & set(b)) for a, b in zip(ids.tolist(), gt_ids.tolist())]) / K
     # Tie-aware: a returned point counts if it is no further than the true k-th neighbor.
-    d = ((base[ids] - queries[:, None, :]) ** 2).sum(-1)
+    if METRIC == "cosine":
+        unit = lambda x: x / np.maximum(np.linalg.norm(x, axis=-1, keepdims=True), 1e-30)  # noqa: E731
+        d = 1 - (unit(base[ids]) * unit(queries)[:, None, :]).sum(-1)
+    else:
+        d = ((base[ids] - queries[:, None, :]) ** 2).sum(-1)
     tie = (d <= gt_d[:, -1:] * (1 + 1e-6) + 1e-6).sum(1) / K
     return by_id, tie
 
@@ -285,7 +302,7 @@ def recall_rows(ids, gt_ids, gt_d, base, queries):
 # ---------------------------------------------------------------- stages
 
 def stage_traces(run_dir):
-    (DATA / "traces").mkdir(exist_ok=True)
+    (DATA / f"traces{SUB}").mkdir(exist_ok=True)
     log = run_dir / "traces.log"
     for split in ["learn", "val", "test"]:
         for ef in EF_MAX:
@@ -413,8 +430,10 @@ def stage_test(run_dir):
         else:
             configs.append((name, "adaptive", s["ef_max"], 0, 0,
                             str(run_dir / "models" / f"{s['model']}.txt"), repr(float(s["multiplier"]))))
-    configs += [(f"evals_ef{ef}", "adaptive", ef, 0, 0, "-", 1) for ef in FIXED_EF]  # eval counts
     assert len({c[0] for c in configs}) == len(configs) and seen
+    # Distance-evaluation counts for fixed ef come from the equivalent adaptive run (untimed).
+    run_configs(run_dir, "test_evals", "test",
+                [(f"evals_ef{ef}", "adaptive", ef, 0, 0, "-", 1) for ef in FIXED_EF], 0, log)
     t0 = time.time()
     run_configs(run_dir, "test", "test", configs, PASSES, log)
     env = {"started": time.strftime("%Y-%m-%dT%H:%M:%S%z", time.localtime(t0)),
@@ -432,7 +451,14 @@ def stage_report(run_dir):
     sel = json.loads((run_dir / "selection.json").read_text())["chosen"]
     tr = json.loads((run_dir / "test_run.json").read_text())
     names = [c[0] for c in tr["configs"]]
-    res = load_runs(DATA / "runs" / "test", names, PASSES)
+    names = [n for n in names if not n.startswith("evals_")]
+    res = load_runs(DATA / f"runs{SUB}" / "test", names, PASSES)
+    ev_dir = DATA / f"runs{SUB}" / "test_evals"
+    if not (ev_dir / "evals_ef10.stats").exists() and DS == "sift":
+        ev_dir = DATA / "runs" / "test"  # the SIFT run timed these in the same pass
+        res.update(load_runs(ev_dir, [f"evals_ef{ef}" for ef in FIXED_EF], PASSES))
+    else:
+        res.update(load_runs(ev_dir, [f"evals_ef{ef}" for ef in FIXED_EF], 0))
     gt_ids, gt_d = read_gt("test")
     base, Qt = read_fbin(fbin("base")), read_fbin(fbin("test"))
 
@@ -522,9 +548,10 @@ def stage_report(run_dir):
             ax.scatter([o["recall"] for o in oracle.values()], [o["evals"] for o in oracle.values()],
                        marker="x", color="k", label="oracle (not deployable)")
         ax.set_xlabel("recall@10 (test)"); ax.set_ylabel(lab); ax.set_yscale("log")
-        ax.set_xlim(0.85, 1.0); ax.grid(alpha=0.3)
+        ax.set_xlim(min(TARGETS) - 0.05, 1.0); ax.grid(alpha=0.3)
     axes[0].legend(fontsize=8)
-    fig.suptitle("SIFT1M, M=16, efc=200: test queries, settings chosen on validation")
+    fig.suptitle(f"{'SIFT1M' if DS == 'sift' else 'GloVe-100'}, M=16, efc=200: test queries, "
+                 "settings chosen on validation")
     fig.tight_layout()
     fig.savefig(run_dir / "recall_latency.png", dpi=130)
     print("\n".join(lines))
@@ -564,6 +591,24 @@ def stage_stress(run_dir):
     print(json.dumps(out, indent=1, default=float))
 
 
+def stage_mt(run_dir):
+    """Representative multithreaded throughput for the matched configs: all test queries in one
+    batch call, 16 threads (all logical CPUs), best of 5. Untimed elsewhere; same machine."""
+    sel = json.loads((run_dir / "selection.json").read_text())["chosen"]
+    tr = json.loads((run_dir / "test_run.json").read_text())
+    want = {sel[k]["name"] if k.startswith("fixed") else k.replace("@", "_") for k in sel}
+    configs = [c for c in tr["configs"] if c[0] in want]
+    cfg = DATA / f"runs{SUB}" / "mt_configs.txt"
+    cfg.write_text("".join(" ".join(str(x) for x in c) + "\n" for c in configs))
+    threads = os.cpu_count()
+    out = sh([TOOL, "batch", str(INDEX), str(fbin("test")), str(cfg), "5", str(threads)],
+             run_dir / "mt.log")
+    rows = [json.loads(line) for line in out.splitlines() if line.startswith("{")]
+    (run_dir / "multithread.json").write_text(json.dumps(rows, indent=1))
+    for r in rows:
+        print(f"{r['name']:>16}  {r['qps']:>10.0f} QPS ({r['threads']} threads)")
+
+
 def parse_model(tok):
     i = tok.index("bias")
     kind = tok[tok.index("kind") + 1]
@@ -601,4 +646,4 @@ if __name__ == "__main__":
     stage, run_dir = sys.argv[1], pathlib.Path(sys.argv[2])
     run_dir.mkdir(parents=True, exist_ok=True)
     {"traces": stage_traces, "select": stage_select, "test": stage_test, "report": stage_report,
-     "stress": stage_stress}[stage](run_dir)
+     "stress": stage_stress, "mt": stage_mt}[stage](run_dir)

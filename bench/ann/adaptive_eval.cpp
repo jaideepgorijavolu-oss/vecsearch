@@ -1,10 +1,11 @@
 // Experiment driver for adaptive (early-terminating) HNSW search; see docs/adaptive_search/.
 //
-//   adaptive_eval build    base.fbin out.hnsw M ef_construction seed     (1 thread: deterministic)
-//   adaptive_eval gt       base.fbin queries.fbin k out.gt               (exact, FlatIndex)
+//   adaptive_eval build    base.fbin out.hnsw M ef_construction seed [metric]  (1 thread)
+//   adaptive_eval gt       base.fbin queries.fbin k out.gt [metric]           (exact, FlatIndex)
 //   adaptive_eval trace    index.hnsw queries.fbin ef checkpoint out.trace
 //   adaptive_eval run      index.hnsw queries.fbin configs.txt passes out_dir
 //   adaptive_eval overhead model.txt inputs.f32 reps   (rows: features, then the query if used)
+//   adaptive_eval batch    index.hnsw queries.fbin configs.txt reps threads  (throughput)
 //
 // trace: one unbudgeted search per query (all threads) recording stats, the features at the
 // checkpoint and the top-k event log, from which recall at any budget is computed offline.
@@ -64,14 +65,15 @@ double seconds_since(Clock::time_point t0) {
   return std::chrono::duration<double>(Clock::now() - t0).count();
 }
 
-int build(char** a) {
+int build(char** a, int nargs) {
+  const Metric metric = parse_metric(nargs > 5 ? a[5] : "l2");
   const Matrix base = read_fbin(a[0]);
   HnswParams p;
   p.M = std::stoul(a[2]);
   p.ef_construction = std::stoul(a[3]);
   p.seed = std::stoull(a[4]);
   const auto t0 = Clock::now();
-  HnswIndex index(base.dim, Metric::L2, p);
+  HnswIndex index(base.dim, metric, p);
   index.add(base.data.data(), base.n, nullptr, 1);
   std::printf(
       "{\"build_seconds\": %.6f, \"threads\": 1, \"max_level\": %d, \"memory_bytes\": %zu}\n",
@@ -80,11 +82,12 @@ int build(char** a) {
   return 0;
 }
 
-int gt(char** a) {
+int gt(char** a, int nargs) {
+  const Metric metric = parse_metric(nargs > 4 ? a[4] : "l2");
   const Matrix base = read_fbin(a[0]), q = read_fbin(a[1]);
   const std::size_t k = std::stoul(a[2]);
   const auto t0 = Clock::now();
-  FlatIndex flat(base.dim, Metric::L2);
+  FlatIndex flat(base.dim, metric);
   flat.add(base.data.data(), base.n);
   const SearchResult r = flat.search(q.data.data(), q.n, k, 0);
   std::printf("{\"gt_seconds\": %.6f, \"threads\": %zu, \"queries\": %u}\n", seconds_since(t0),
@@ -147,11 +150,9 @@ struct Config {
   std::unique_ptr<TerminationModel> model;
 };
 
-int run(char** a) {
-  const auto index = HnswIndex::load(a[0]);
-  const Matrix q = read_fbin(a[1]);
+std::vector<Config> read_configs(const std::string& path) {
   std::vector<Config> configs;
-  std::ifstream cf(a[2]);
+  std::ifstream cf(path);
   for (std::string line; std::getline(cf, line);) {
     if (line.empty() || line[0] == '#') continue;
     std::istringstream ls(line);
@@ -166,6 +167,13 @@ int run(char** a) {
     }
     configs.push_back(std::move(c));
   }
+  return configs;
+}
+
+int run(char** a) {
+  const auto index = HnswIndex::load(a[0]);
+  const Matrix q = read_fbin(a[1]);
+  std::vector<Config> configs = read_configs(a[2]);
   const std::size_t passes = std::stoul(a[3]);
   const std::filesystem::path dir(a[4]);
   std::filesystem::create_directories(dir);
@@ -236,16 +244,46 @@ int overhead(char** a) {
   return 0;
 }
 
+
+// Multithreaded throughput: all queries in one call on `threads` threads, best of `reps` runs.
+// Prints one JSON line per config. Results must equal the single-thread ones (checked).
+int batch(char** a) {
+  const auto index = HnswIndex::load(a[0]);
+  const Matrix q = read_fbin(a[1]);
+  const std::vector<Config> configs = read_configs(a[2]);
+  const std::size_t reps = std::stoul(a[3]), threads = std::stoul(a[4]);
+  for (const Config& c : configs) {
+    auto search = [&](std::size_t t) {
+      return c.kind == "fixed" ? index->search(q.data.data(), q.n, kK, c.p.ef, t)
+                               : index->search_adaptive(q.data.data(), q.n, kK, c.p, nullptr,
+                                                        nullptr, t);
+    };
+    const SearchResult serial = search(1);
+    double best = 1e300;
+    for (std::size_t r = 0; r < reps; ++r) {
+      const auto t0 = Clock::now();
+      const SearchResult got = search(threads);
+      best = std::min(best, seconds_since(t0));
+      if (got.ids != serial.ids) throw std::runtime_error("parallel != serial: " + c.name);
+    }
+    std::printf("{\"name\": \"%s\", \"threads\": %zu, \"reps\": %zu, \"best_seconds\": %.6f, "
+                "\"qps\": %.1f}
+", c.name.c_str(), threads, reps, best, q.n / best);
+  }
+  return 0;
+}
+
 }  // namespace
 
 int main(int argc, char** argv) try {
   const std::string cmd = argc > 1 ? argv[1] : "";
   const int nargs = argc - 2;
-  if (cmd == "build" && nargs == 5) return build(argv + 2);
-  if (cmd == "gt" && nargs == 4) return gt(argv + 2);
+  if (cmd == "build" && (nargs == 5 || nargs == 6)) return build(argv + 2, nargs);
+  if (cmd == "gt" && (nargs == 4 || nargs == 5)) return gt(argv + 2, nargs);
   if (cmd == "trace" && nargs == 5) return trace(argv + 2);
   if (cmd == "run" && nargs == 5) return run(argv + 2);
   if (cmd == "overhead" && nargs == 3) return overhead(argv + 2);
+  if (cmd == "batch" && nargs == 5) return batch(argv + 2);
   std::fprintf(stderr, "usage: see the comment at the top of adaptive_eval.cpp\n");
   return 2;
 } catch (const std::exception& e) {
