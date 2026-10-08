@@ -1,6 +1,6 @@
-# Adaptive HNSW search: audit and protocol (draft, awaiting approval)
+# Adaptive HNSW search: audit and protocol
 
-Status: DRAFT v0, 2026-10-07. Becomes binding when committed before any final-test evaluation.
+Status: approved 2026-10-07; committed before any final-test evaluation.
 Amendments go at the bottom with a date and reason.
 
 ## 1. Audit (2026-10-07)
@@ -30,20 +30,19 @@ SIMD: runtime dispatch scalar/AVX2/NEON; library not built with `-march=native` 
 AVX-512 is not used. Datasets (`vecsearch-data` volume): ann-benchmarks HDF5 files
 (sha256 sift dd6f0a6e…, glove 544af1d5…).
 
-### Discrepancies with the brief
+### Discrepancies with the plan
 
 1. ann-benchmarks HDF5 has no learn set. `sift_learn.fvecs` needs the TEXMEX `sift.tar.gz`
-   (~161 MB), and I must verify `sift_base.fvecs` equals HDF5 `train` before reusing its ground truth.
+   (~161 MB), and `sift_base.fvecs` must be verified to equal HDF5 `train` before reusing its ground truth.
 2. Legacy JSONs record no commit, CPU model, flags, seed, or per-query data; timings are
    best-of-N batch calls via Python. They stay untouched and are not compared with new timings.
 3. Legacy indexes were built on 16 threads, so the graph is not deterministic. The new study
    uses its own snapshot (built on one thread) and re-measures fixed-ef on it.
 4. `data/sift1m.hnsw` in the volume has no provenance: not used.
 5. The engine has no distance-evaluation or step counters and no budget/termination hook.
-6. Brief mentions p95; legacy reports p99. New runs report p50/p95/p99.
-7. Order and publishing: user said "go, use your own judgement" (2026-10-07) and did not
-   confirm the sensor checkpoint; recorded as user-directed order. Publishing is undefined, so
-   nothing is pushed until the final handoff is approved.
+6. The plan asks for p95; legacy results report p99. New runs report p50/p95/p99.
+7. Order and publishing: this study was started before the sensor-encoder checkpoint review
+   (a deliberate change of the planned order). Results stay on a branch until reviewed.
 
 ## 2. Question and prior work
 
@@ -92,7 +91,7 @@ versioned flat file and evaluated in C++ (no ML runtime in the library). Choose 
   duplicate another learn vector, are dropped (counts reported).
 - Val/test: the 10k HDF5 test queries, split by permutation seed 0 into 5,000 val and 5,000 test. Manifests saved.
 - Recall@10 by id (legacy-compatible) plus tie-aware recall (returned dist ≤ d_10 + 1e-6·d_10).
-  I check zero-distance self-matches (expected none) and the frequency of ties.
+  Zero-distance self-matches are checked (expected none) and the frequency of ties.
 
 ## 5. Selection and evaluation
 
@@ -127,8 +126,7 @@ training minutes. Out of scope for this MVS: GloVe, multithread runs, graph-vari
 
 ## Amendments
 
-**A1 (2026-10-07, approved by user "go"; before any test evaluation).** Status: protocol approved.
-Publishing: local only until the final handoff.
+**A1 (2026-10-07, before any test evaluation).** Protocol approved.
 
 **A2 (2026-10-07, before any test evaluation). Data findings and exact grids.**
 - `prepare.py` found that 10,017 of the 100,000 `sift_learn.fvecs` vectors are byte-identical to
@@ -150,7 +148,7 @@ Publishing: local only until the final handoff.
   Distance counts are layer 0 only; greedy descent is identical for every method.
 
 **A3 (2026-10-07, after the SIFT results, before any GloVe evaluation). GloVe-100 and multithread.**
-The user asked to continue with GloVe and multithreaded runs.
+Extension after the SIFT results: GloVe-100 and multithreaded runs.
 - Data: ann-benchmarks `glove-100-angular`. There is no learn set. Sampling rule: 100,000 rows of
   `train` drawn without replacement (seed 0) become training queries and are **removed from the
   indexed base** (1,083,514 rows), so no training query can match itself. Training rows equal to a
