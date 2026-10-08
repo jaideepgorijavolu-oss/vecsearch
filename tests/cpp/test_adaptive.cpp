@@ -190,6 +190,46 @@ TEST(Adaptive, ModelIgnoredWithDeletedNodes) {
   for (const auto& s : st) EXPECT_FALSE(s.model_used);
 }
 
+// Fallback contract: when the model is ignored, only the model is dropped. Explicit max_evals and
+// patience still apply, so the result equals the same call without a model.
+TEST(Adaptive, FallbackKeepsExplicitLimits) {
+  auto base = random_vectors(1000, kDim, 5), queries = random_vectors(20, kDim, 6);
+  HnswIndex index(kDim, Metric::L2, {.M = 8, .ef_construction = 50});
+  index.add(base.data(), 1000, nullptr, 1);
+  index.remove(3);
+  const auto model = constant_model(15, 12);
+  for (const AdaptiveParams limits :
+       {AdaptiveParams{.ef = kEf, .max_evals = 10}, AdaptiveParams{.ef = kEf, .patience = 1}}) {
+    AdaptiveParams with_model = limits;
+    with_model.model = &model;
+    std::vector<AdaptiveStats> a(20), b(20);
+    const auto r1 = index.search_adaptive(queries.data(), 20, kK, with_model, a.data(), nullptr, 1);
+    const auto r2 = index.search_adaptive(queries.data(), 20, kK, limits, b.data(), nullptr, 1);
+    EXPECT_EQ(r1.ids, r2.ids);
+    for (std::size_t q = 0; q < 20; ++q) {
+      EXPECT_FALSE(a[q].model_used);
+      EXPECT_EQ(a[q].evals, b[q].evals);
+      EXPECT_EQ(a[q].stop, b[q].stop);
+      EXPECT_NE(a[q].stop, StopReason::Converged);  // the explicit limit did stop it
+    }
+  }
+  // Same rule for invalid features (zero distance) on an index without deletions.
+  auto& f = fixture();
+  std::vector<float> q(f.base.begin(), f.base.begin() + 5 * kDim);
+  const auto late_model = constant_model(20, 30);  // checkpoint after the exact match is found
+  const AdaptiveParams capped{.ef = kEf, .max_evals = 40};
+  AdaptiveParams capped_model = capped;
+  capped_model.model = &late_model;
+  std::vector<AdaptiveStats> a(5), b(5);
+  const auto r1 = f.index.search_adaptive(q.data(), 5, kK, capped_model, a.data(), nullptr, 1);
+  const auto r2 = f.index.search_adaptive(q.data(), 5, kK, capped, b.data(), nullptr, 1);
+  EXPECT_EQ(r1.ids, r2.ids);
+  for (std::size_t i = 0; i < 5; ++i) {
+    EXPECT_FALSE(a[i].model_used);
+    EXPECT_EQ(a[i].evals, 40u);
+  }
+}
+
 TEST(Adaptive, ParallelEqualsSerial) {
   auto& f = fixture();
   const auto model = constant_model(150, 40);

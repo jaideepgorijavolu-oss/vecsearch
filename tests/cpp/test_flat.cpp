@@ -137,7 +137,7 @@ TEST(Flat, SaveLoadRoundTrip) {
   FlatIndex index(37, Metric::InnerProduct);
   const auto data = test::random_vectors(200, 37, 5);
   index.add(data.data(), 200);
-  const auto path = (std::filesystem::temp_directory_path() / "vecsearch_flat_test.bin").string();
+  const auto path = vecsearch::test::unique_temp_path("vecsearch_flat_test.bin");
   index.save(path);
   const FlatIndex loaded = FlatIndex::load(path);
   std::filesystem::remove(path);
@@ -160,7 +160,7 @@ TEST(Flat, RemoveSkipsVector) {
   EXPECT_EQ(index.size(), 49u);
   const auto res = index.search(data.data() + 3 * 8, 1, 49);
   for (auto id : res.ids) EXPECT_NE(id, 3);
-  const auto path = (std::filesystem::temp_directory_path() / "vecsearch_flat_rm.bin").string();
+  const auto path = vecsearch::test::unique_temp_path("vecsearch_flat_rm.bin");
   index.save(path);
   const FlatIndex loaded = FlatIndex::load(path);
   std::filesystem::remove(path);
@@ -169,7 +169,7 @@ TEST(Flat, RemoveSkipsVector) {
 }
 
 TEST(Flat, LoadRejectsGarbage) {
-  const auto path = (std::filesystem::temp_directory_path() / "vecsearch_garbage.bin").string();
+  const auto path = vecsearch::test::unique_temp_path("vecsearch_garbage.bin");
   {
     std::ofstream out(path, std::ios::binary);
     out << "definitely not an index";
