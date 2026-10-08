@@ -162,6 +162,17 @@ node on layer l, deleted flags, and that live labels are unique and not -1. Any 
 (`RuntimeError` in Python) instead of crashing a later search; `tests/cpp/test_corrupt.cpp`
 covers each case, every truncation, and random byte flips under ASan. Host byte order (no cross-endian portability).
 
+## Experimental: adaptive search
+
+`search_adaptive()` is a separate copy of the layer-0 loop, so `search()` keeps its exact code
+path. It can stop at a fixed distance-evaluation budget, after N expansions without a top-k
+change (patience), or at a budget a `TerminationModel` predicts at a checkpoint (Li et al.,
+SIGMOD 2020). All rules hang off one comparison per distance evaluation against `next_event`.
+A small k-heap tracks the running top-k for features and patience. The model is immutable and
+shared across threads; per-query state lives in `Scratch`. Indexes with deleted nodes, or
+queries whose features are not finite, fall back to the plain ef search. Filters are not
+supported. Results: [adaptive_search/RESULTS.md](adaptive_search/RESULTS.md).
+
 ## What was intentionally left out
 
 - Distribution, sharding, replication, WAL or crash safety: out of scope (spec non-goals).

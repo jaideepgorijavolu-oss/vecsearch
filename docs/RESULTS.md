@@ -363,6 +363,17 @@ The cost is latency: 33× fewer QPS at 1% selectivity. Brute force over the allo
 somewhere between 50% and 10% selectivity, so a real system should switch strategies per query
 (see DESIGN.md, Filtering). Correlated filters were not measured.
 
+## Phase 7: Learned early termination (experiment)
+
+Methodology, tables and limitations: [adaptive_search/RESULTS.md](adaptive_search/RESULTS.md),
+pre-registered in [adaptive_search/PROTOCOL.md](adaptive_search/PROTOCOL.md). In short:
+- GloVe-100: 1,114 µs per query at recall@10 0.9468, vs fixed ef 768 at 1,406 µs and 0.9450
+  (single thread). Worse p95/p99. Loses at recall 0.80.
+- SIFT1M: 7–14% fewer distance evaluations at matched recall, no single-thread latency gain.
+
+These use new index snapshots built on one thread and reduced/split query sets, so they are not
+comparable with the numbers above.
+
 ## Resume bullets (numbers from this file)
 
 - Implemented an HNSW approximate nearest neighbor index from scratch in C++20 with

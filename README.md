@@ -7,7 +7,10 @@ A from-scratch approximate nearest neighbor (ANN) search engine in C++20: an HNS
 with hand-written AVX2/NEON distance kernels and runtime CPU dispatch, multithreaded build and
 search, soft deletes and filtered search, zero-copy Python bindings, and a small FastAPI
 service. It is benchmarked against hnswlib and Faiss on SIFT1M and GloVe-100 with
-recall-vs-throughput curves.
+recall-vs-throughput curves. An experimental learned early-termination search (a small
+tree model that predicts each query's search budget) is 21% faster than fixed-ef search at
+~0.947 recall@10 on GloVe-100 and gives no latency gain on SIFT1M; see
+[docs/adaptive_search/RESULTS.md](docs/adaptive_search/RESULTS.md).
 
 ![SIFT1M recall vs QPS](bench/ann/results/sift_recall_qps.png)
 
