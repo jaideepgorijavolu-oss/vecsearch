@@ -14,6 +14,7 @@
 #include "vecsearch/distance.hpp"
 #include "vecsearch/search_result.hpp"
 #include "vecsearch/spinlock.hpp"
+#include "vecsearch/termination_model.hpp"
 #include "vecsearch/topk.hpp"
 #include "vecsearch/visited_list.hpp"
 
@@ -26,6 +27,40 @@ struct HnswParams {
   std::uint64_t seed = 100;              // level assignment RNG seed
   bool use_heuristic = true;             // Algorithm 4 neighbor selection; false = plain closest-M
   std::size_t sequential_prefix = 1000;  // the first nodes of an index are inserted on one thread
+};
+
+// Experimental early termination for search_adaptive() (docs/adaptive_search/). The layer-0
+// beam search runs with width `ef` and stops at the first of: the usual HNSW condition, a budget
+// of layer-0 distance evaluations, or `patience` expansions in a row that did not change the
+// top-k. The budget is max_evals, or, with a model, max(checkpoint, multiplier * predicted).
+struct AdaptiveParams {
+  std::size_t ef = 0;          // beam width (0 = ef_search()); at least k
+  std::size_t max_evals = 0;   // fixed budget of layer-0 distance evaluations (0 = none)
+  std::size_t patience = 0;    // expansions without a top-k change before stopping (0 = off)
+  const TerminationModel* model = nullptr;  // learned budget (no deleted nodes only)
+  double multiplier = 1.0;                  // scales the model's predicted budget
+  std::size_t checkpoint = 0;  // without a model: record features at this many evaluations
+};
+
+enum class StopReason : std::uint8_t { Converged, Budget, Patience };
+
+struct AdaptiveStats {
+  std::uint32_t evals = 0;       // layer-0 distance evaluations (greedy descent excluded)
+  std::uint32_t expansions = 0;  // candidates popped and expanded on layer 0
+  std::uint32_t budget = 0;      // the evaluation budget in force at the end (0 = none)
+  StopReason stop = StopReason::Converged;
+  bool features_valid = false;  // features were computed at the checkpoint and are finite
+  bool model_used = false;      // a model prediction set the budget (false = plain ef search)
+  float features[kNumTerminationFeatures] = {};
+};
+
+// One change of the running top-k: node `id` (label) at distance `dist` entered it at layer-0
+// evaluation number `eval` (1-based). Replaying these gives the top-k after any number of
+// evaluations, which is how training labels and budget simulations are computed.
+struct TopkEvent {
+  std::uint32_t eval;
+  std::int64_t id;
+  float dist;
 };
 
 // Hierarchical Navigable Small World graph (Malkov & Yashunin, 2018).
@@ -49,6 +84,15 @@ class HnswIndex {
   SearchResult search(const float* queries, std::size_t nq, std::size_t k, std::size_t ef = 0,
                       std::size_t num_threads = 0, const std::int64_t* allowed_labels = nullptr,
                       std::size_t num_allowed = 0) const;
+
+  // Experimental search with early termination (see AdaptiveParams). Unfiltered only. With a
+  // model, an index with deleted nodes or a query whose features are not finite falls back to the
+  // plain ef search (model_used = false). `stats` (nq entries) and `events` (resized to nq) are
+  // optional outputs. With no budget, patience or model, results equal search(queries, k, ef).
+  SearchResult search_adaptive(const float* queries, std::size_t nq, std::size_t k,
+                               const AdaptiveParams& params, AdaptiveStats* stats = nullptr,
+                               std::vector<std::vector<TopkEvent>>* events = nullptr,
+                               std::size_t num_threads = 0) const;
 
   // Soft delete: the node stays in the graph (and is traversed) but is never returned.
   // Returns false if the label is not present.
@@ -87,6 +131,7 @@ class HnswIndex {
     std::vector<std::uint32_t> neighbor_copy;
     std::vector<std::uint32_t> unvisited;  // neighbors of the node being expanded, not yet seen
     std::vector<float> query;              // normalized query copy (cosine)
+    std::vector<Cand> topk;                // search_adaptive: max-heap of the best k so far
   };
   class ScratchPool;
 
@@ -111,6 +156,14 @@ class HnswIndex {
   template <bool kLocked, class Accept>
   void search_layer(const float* q, std::uint32_t ep, std::size_t ef, int level, Scratch& s,
                     const Accept& accept) const;
+
+  // search_layer on layer 0 plus the termination rules of search_adaptive. A separate copy, so
+  // search() keeps exactly its original code path.
+  template <class Accept>
+  void search_layer_adaptive(const float* q, std::uint32_t ep, std::size_t k,
+                             const AdaptiveParams& p, const TerminationModel* model, Scratch& s,
+                             const Accept& accept, AdaptiveStats& st,
+                             std::vector<TopkEvent>* events) const;
 
   // Greedy descent (ef = 1) from ep through layers top..(bottom+1). Returns the closest node.
   template <bool kLocked>

@@ -1,3 +1,6 @@
+add_executable(adaptive_eval adaptive_eval.cpp)
+target_link_libraries(adaptive_eval PRIVATE vecsearch)
+
 add_executable(hnsw_eval hnsw_eval.cpp)
 target_link_libraries(hnsw_eval PRIVATE vecsearch)
 

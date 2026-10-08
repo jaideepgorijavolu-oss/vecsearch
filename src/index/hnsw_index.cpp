@@ -314,6 +314,161 @@ void HnswIndex::search_layer(const float* q, std::uint32_t ep, std::size_t ef, i
   }
 }
 
+template <class Accept>
+void HnswIndex::search_layer_adaptive(const float* q, std::uint32_t ep, std::size_t k,
+                                      const AdaptiveParams& p, const TerminationModel* model,
+                                      Scratch& s, const Accept& accept, AdaptiveStats& st,
+                                      std::vector<TopkEvent>* events) const {
+  constexpr std::size_t kNever = std::numeric_limits<std::size_t>::max();
+  constexpr float kInf = std::numeric_limits<float>::infinity();
+  const std::size_t ef = p.ef;
+  auto& candidates = s.candidates;
+  auto& results = s.results;
+  auto& topk = s.topk;  // max-heap of the best k accepted nodes: exactly what would be returned
+  candidates.clear();
+  results.clear();
+  topk.clear();
+  s.visited.reset(count_);
+  st = AdaptiveStats{};
+
+  // All termination rules are checked against the layer-0 evaluation count. To keep the hot
+  // loop at one comparison per evaluation, `next_event` is the next count at which anything can
+  // happen (the checkpoint or the budget).
+  std::size_t evals = 0;
+  std::size_t budget = p.max_evals != 0 ? p.max_evals : kNever;
+  std::size_t checkpoint = model ? model->checkpoint() : (p.checkpoint != 0 ? p.checkpoint : kNever);
+  std::size_t next_event = std::min(budget, checkpoint);
+  std::size_t last_change = 0, changes = 0, stale_expansions = 0;
+  bool changed = false;  // the top-k changed during the current expansion
+  float best = kInf;
+  float d_entry = 0;
+
+  auto offer_topk = [&](float d, std::uint32_t id) {
+    if (topk.size() == k && !(d < topk.front().dist)) return;
+    topk.push_back({d, id});
+    std::push_heap(topk.begin(), topk.end());
+    if (topk.size() > k) {
+      std::pop_heap(topk.begin(), topk.end());
+      topk.pop_back();
+    }
+    best = std::min(best, d);
+    last_change = evals;
+    ++changes;
+    changed = true;
+    if (events) events->push_back({static_cast<std::uint32_t>(evals), labels_[id], d});
+  };
+
+  // Runs when evals reaches next_event. Returns true if the search must stop now.
+  auto on_event = [&]() {
+    if (evals >= checkpoint) {
+      checkpoint = kNever;
+      if (topk.size() == k) {
+        const float dk = topk.front().dist;
+        const float cand = candidates.empty() ? dk : candidates.front().dist;
+        float* f = st.features;
+        f[kLogEntryDist] = std::log1p(d_entry);
+        f[kLogBestDist] = std::log1p(best);
+        f[kLogKthDist] = std::log1p(dk);
+        f[kBestOverEntry] = best / d_entry;
+        f[kKthOverEntry] = dk / d_entry;
+        f[kKthOverBest] = dk / best;
+        f[kCandidateOverKth] = cand / dk;
+        f[kStaleFraction] = float(evals - last_change) / float(evals);
+        f[kTopkChanges] = float(changes);
+        st.features_valid = std::all_of(f, f + kNumTerminationFeatures,
+                                        [](float x) { return std::isfinite(x); });
+      }
+      // Invalid features (e.g. a zero distance) fall back to the plain ef search.
+      if (st.features_valid && model) {
+        const double predicted = p.multiplier * std::exp(model->predict_log_evals(st.features, q));
+        if (predicted >= 0) {  // false for NaN
+          const double capped = std::min(predicted, 4e9);
+          budget = std::min(budget, std::max(evals, static_cast<std::size_t>(std::ceil(capped))));
+          st.model_used = true;
+        }
+      }
+    }
+    if (evals >= budget) {
+      st.stop = StopReason::Budget;
+      return true;
+    }
+    next_event = std::min(budget, checkpoint);
+    return false;
+  };
+
+  const float d0 = dist(q, ep);
+  ++evals;
+  d_entry = d0;
+  s.visited.test_and_set(ep);
+  candidates.push_back({d0, ep});
+  if (accept(ep)) {
+    results.push_back({d0, ep});
+    offer_topk(d0, ep);
+  }
+  float bound = results.empty() ? kInf : d0;
+  bool stop = evals >= next_event && on_event();
+
+  // From here on this is search_layer (same order of expansions and distance evaluations), with
+  // the termination checks added.
+  while (!stop && !candidates.empty()) {
+    const Cand c = candidates.front();
+    if (c.dist > bound && results.size() >= ef) break;
+    std::pop_heap(candidates.begin(), candidates.end(), std::greater<>{});
+    candidates.pop_back();
+    if (prefetch_ && !candidates.empty()) prefetch_address(links(candidates.front().id, 0));
+    ++st.expansions;
+    changed = false;
+
+    const std::uint32_t* block = links(c.id, 0);
+    const std::uint32_t* nb = block + 1;
+    const std::size_t n = block[0];
+    if (prefetch_) {
+      for (std::size_t j = 0; j < n; ++j) prefetch_address(s.visited.address(nb[j]));
+    }
+    auto& todo = s.unvisited;
+    todo.clear();
+    for (std::size_t j = 0; j < n; ++j) {
+      if (!s.visited.test_and_set(nb[j])) todo.push_back(nb[j]);
+    }
+    if (prefetch_) {
+      for (const std::uint32_t id : todo) prefetch_vector(id);
+    }
+
+    for (const std::uint32_t id : todo) {
+      const float d = dist(q, id);
+      ++evals;
+      if (results.size() < ef || d < bound) {
+        candidates.push_back({d, id});
+        std::push_heap(candidates.begin(), candidates.end(), std::greater<>{});
+        if (accept(id)) {
+          results.push_back({d, id});
+          std::push_heap(results.begin(), results.end());
+          if (results.size() > ef) {
+            std::pop_heap(results.begin(), results.end());
+            results.pop_back();
+          }
+          bound = results.front().dist;
+          offer_topk(d, id);
+        }
+      }
+      if (evals >= next_event && on_event()) {
+        stop = true;
+        break;
+      }
+    }
+    if (stop) break;
+    if (p.patience != 0) {
+      stale_expansions = changed ? 0 : stale_expansions + 1;
+      if (stale_expansions >= p.patience) {
+        st.stop = StopReason::Patience;
+        break;
+      }
+    }
+  }
+  st.evals = static_cast<std::uint32_t>(evals);
+  st.budget = budget == kNever ? 0 : static_cast<std::uint32_t>(std::min<std::size_t>(budget, UINT32_MAX));
+}
+
 void HnswIndex::select_neighbors(std::vector<Cand>& candidates, std::size_t m) const {
   if (candidates.size() <= m) return;
   if (!params_.use_heuristic) {
@@ -416,6 +571,51 @@ SearchResult HnswIndex::search(const float* queries, std::size_t nq, std::size_t
       result.ids[qi * k + j] = labels_[s.results[j].id];
       result.distances[qi * k + j] = s.results[j].dist;
     }
+  });
+  return result;
+}
+
+SearchResult HnswIndex::search_adaptive(const float* queries, std::size_t nq, std::size_t k,
+                                        const AdaptiveParams& params, AdaptiveStats* stats,
+                                        std::vector<std::vector<TopkEvent>>* events,
+                                        std::size_t num_threads) const {
+  if (params.model && params.model->query_dim() != 0 && params.model->query_dim() != dim_)
+    throw std::invalid_argument("termination model query_dim does not match the index");
+  SearchResult result(nq, k);
+  if (events) events->assign(nq, {});
+  if (stats) std::fill(stats, stats + nq, AdaptiveStats{});
+  if (k == 0 || nq == 0 || max_level_ < 0) return result;
+  AdaptiveParams p = params;
+  p.ef = std::max(p.ef == 0 ? ef_search() : p.ef, k);
+  // The model was trained on static, unfiltered indexes: with deleted nodes, use plain ef.
+  const TerminationModel* model = num_deleted_ == 0 ? p.model : nullptr;
+
+  const std::size_t threads = std::min(resolve_threads(num_threads), nq);
+  ScratchPool::Lease scratch(*scratch_pool_, threads);
+  parallel_for(nq, threads, [&](std::size_t qi, std::size_t worker) {
+    Scratch& s = scratch[worker];
+    const float* q = queries + qi * dim_;
+    if (metric_ == Metric::Cosine) {
+      s.query.assign(q, q + dim_);
+      normalize(s.query.data(), dim_);
+      q = s.query.data();
+    }
+    const std::uint32_t ep = greedy_descent<false>(q, entry_point_, max_level_, 0, s);
+    AdaptiveStats st;
+    std::vector<TopkEvent>* ev = events ? &(*events)[qi] : nullptr;
+    if (num_deleted_ > 0) {
+      search_layer_adaptive(q, ep, k, p, model, s,
+                            [&](std::uint32_t id) { return deleted_[id] == 0; }, st, ev);
+    } else {
+      search_layer_adaptive(q, ep, k, p, model, s, AcceptAll{}, st, ev);
+    }
+    std::sort_heap(s.results.begin(), s.results.end());
+    const std::size_t found = std::min(k, s.results.size());
+    for (std::size_t j = 0; j < found; ++j) {
+      result.ids[qi * k + j] = labels_[s.results[j].id];
+      result.distances[qi * k + j] = s.results[j].dist;
+    }
+    if (stats) stats[qi] = st;
   });
   return result;
 }
