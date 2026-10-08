@@ -386,3 +386,8 @@ comparable with the numbers above.
 - Exposed the engine through zero-copy pybind11 bindings (GIL released) and a Dockerized
   FastAPI service with metadata-filtered search and strict input validation, sustaining ~990
   req/s with p99 29 ms at 16 concurrent clients (Eco-mode measurement).
+- Implemented learned early termination for HNSW search (following Li et al., SIGMOD 2020) with
+  a pre-registered, leakage-checked evaluation: 21% lower single-thread latency than fixed-ef
+  search at ~0.947 recall@10 on GloVe-100, and a documented negative result on SIFT1M (fewer
+  distance evaluations, no latency gain). Found 10,017 SIFT training vectors that duplicated
+  the test queries ([adaptive_search/RESULTS.md](adaptive_search/RESULTS.md)).
