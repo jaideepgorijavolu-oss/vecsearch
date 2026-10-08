@@ -8,3 +8,5 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN pip3 install --no-cache-dir numpy h5py matplotlib pytest scikit-build-core pybind11 \
       hnswlib faiss-cpu psutil fastapi "uvicorn[standard]" pydantic httpx locust
 WORKDIR /work
+# Adaptive-search study (docs/adaptive_search/): policy training.
+RUN pip3 install --no-cache-dir scikit-learn

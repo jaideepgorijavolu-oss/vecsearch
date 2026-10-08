@@ -1,0 +1,18 @@
+{
+ "base": 1000000,
+ "learn_raw": 100000,
+ "learn_kept": 89788,
+ "learn_dropped_duplicate_within": 195,
+ "learn_dropped_equal_to_query": 10017,
+ "learn_kept_identical_to_a_base_vector": 0,
+ "test_queries_identical_to_a_base_vector": 0,
+ "duplicate_rows_within_10k_queries": 1,
+ "val": 5000,
+ "test": 5000
+}
+{"determinism_100k": "identical", "sha256": "c191bbe8adf2849aa29f260560d34e7f612b02c0da3753c3b93a5797a7adf565"}
+{"build_seconds": 420.445909, "threads": 1, "max_level": 5, "memory_bytes": 727109084}
+{"snapshot": "sift_m16_efc200_s100.hnsw", "sha256": "1ff6d63a975485c91f7ebc2512da3f70d1f944a92ada757820e0c87f031b664b"}
+{"split": "learn", "gt_seconds": 872.835328, "threads": 16, "queries": 89788}
+{"split": "val", "gt_seconds": 49.194360, "threads": 16, "queries": 5000}
+{"split": "test", "gt_seconds": 49.482285, "threads": 16, "queries": 5000}

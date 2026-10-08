@@ -1,0 +1,2 @@
+{"cmd": ["build/bench/bench/ann/adaptive_eval", "trace", "/data/adaptive/sift_m16_efc200_s100.hnsw", "/data/adaptive/sift_learn.fbin", "128", "100", "/data/adaptive/traces/learn_ef128_c100.trace"], "rc": 0, "seconds": 8.991629600524902}
+trace: 5.06 s

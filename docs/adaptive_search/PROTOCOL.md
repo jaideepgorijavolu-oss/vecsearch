@@ -124,3 +124,27 @@ indexes use the fixed path.
 Download ~161 MB. Disk +~1.5 GB (docker volume; traces and GT not committed, hashes recorded).
 Compute ≈ 1–1.5 h total: snapshot ~8 min, learn GT ~15 min, traces ~10 min, timing ~15 min,
 training minutes. Out of scope for this MVS: GloVe, multithread runs, graph-variance repeats.
+
+## Amendments
+
+**A1 (2026-10-07, approved by user "go"; before any test evaluation).** Status: protocol approved.
+Publishing: local only until the final handoff.
+
+**A2 (2026-10-07, before any test evaluation). Data findings and exact grids.**
+- `prepare.py` found that 10,017 of the 100,000 `sift_learn.fvecs` vectors are byte-identical to
+  one of the 10,000 SIFT test queries (the query set is essentially contained in the learn set),
+  and 195 more duplicate another learn vector. All are dropped: 89,788 training queries remain.
+  Without this check, the policy would have been trained on the exact vectors it is tested on.
+  No learn vector or query equals a base vector. One pair of identical queries exists (rows
+  2017 and 2688), both in validation; nothing crosses val/test.
+- Index snapshot: built on 1 thread, 420 s; sha256 1ff6d63a…; building the 100k prefix twice
+  gives identical files.
+- Ground-truth cost (FlatIndex, 16 threads): learn 873 s, val 49 s, test 49 s.
+- Grids: ef_max {128, 256, 512}; checkpoint {100, 200, 400} evaluations; models: ridge and
+  sklearn HistGradientBoostingRegressor (200 iterations, ≤15 leaves, lr 0.1, fixed, not tuned),
+  each with and without the raw query vector. Fixed ef: 22 values from 10 to 512. Patience:
+  ef {64, 128, 256, 512} × N {2 … 80} expansions (15 values).
+- Selection rule on validation, all methods: for each recall target, the setting with the fewest
+  mean layer-0 distance evaluations whose validation recall@10 is ≥ the target (simulated
+  from traces for cap/learned, then confirmed by real runs; real runs for fixed ef and patience).
+  Distance counts are layer 0 only; greedy descent is identical for every method.
