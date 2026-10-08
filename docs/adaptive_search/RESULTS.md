@@ -249,7 +249,10 @@ claimed.
 - Python: wheel built and `pytest tests/python` 73/73 passed, README example ran (bindings
   untouched; `search_adaptive` is C++ only). Legacy benchmark files were not regenerated and
   are not compared with these timings.
-- Run isolation (`bench/ann/adaptive/test_study.py`, 6 tests on a tiny dataset with the real C++
+- Fresh-data rebuild (empty Docker volume, current scripts): both downloads verified against
+  `sources.json`. The SIFT splits, the index (`1ff6d63a…`) and all three ground-truth files came out
+  byte-identical to the published run's.
+- Run isolation (`bench/ann/adaptive/test_study.py`, 8 tests on a tiny dataset with the real C++
   tool; runs in CI):
   - a rebuilt index is neither reused from the trace cache nor accepted by a pinned run;
   - changed queries or code change the cache key;
@@ -257,6 +260,8 @@ claimed.
   - two runs on one data root keep separate raw outputs;
   - a changed model file is detected;
   - a report reads only its own bundle and keeps the measurement environment.
+  - changed search code stops every resuming stage, and its traces are refused;
+  - line endings do not change the code fingerprint.
 
 ## Limitations
 

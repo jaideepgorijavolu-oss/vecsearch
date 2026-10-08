@@ -16,5 +16,7 @@
  },
  "recorded": "2026-10-08T04:53:08+0000",
  "code_fingerprint_at_pin": "20f52294ea57cccf16e624e82dfaa21b841282d2af1b8c77b5e744ba6dddc05f",
- "note": "Pinned after the run by `adopt`; index and fbin hashes verified against prepare.log and split_manifest.json. GT hashes recorded here."
+ "note": "Pinned after the run by `adopt`; index and fbin hashes verified against prepare.log and split_manifest.json. GT hashes recorded here.",
+ "code_fingerprint": "f27645276535ae418dd06b2d878e172d02e1bb3080e3732b95b976841c63ffe1",
+ "code_fingerprint_note": "Pinned by adopt from a working tree where src/index/hnsw_index.cpp and include/vecsearch/hnsw_index.hpp had CRLF line endings; code_fingerprint_at_pin is that raw value. Converting exactly those two files to CRLF reproduces it from the current code, so the code is identical. code_fingerprint is the line-ending-normalized value checked by later stages."
 }

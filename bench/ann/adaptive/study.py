@@ -142,9 +142,11 @@ def sha256(path):
 
 
 def code_fingerprint():
+    """sha256 over CODE_FILES with line endings normalized to LF, so the same code gives the same
+    fingerprint on Windows (CRLF) and Linux checkouts."""
     h = hashlib.sha256()
     for rel in CODE_FILES:
-        h.update(rel.encode() + b"\0" + (ROOT / rel).read_bytes() + b"\0")
+        h.update(rel.encode() + b"\0" + (ROOT / rel).read_bytes().replace(b"\r\n", b"\n") + b"\0")
     return h.hexdigest()
 
 
@@ -179,13 +181,16 @@ def current_inputs():
             "gt": {s: sha256(gt_path(s)) for s in ["learn", "val", "test"]}}
 
 
-def pin_inputs(run_dir, note=None):
-    """Record the run's input fingerprints (first stage), or check them (every later stage)."""
+def pin_inputs(run_dir, note=None, check_code=True):
+    """Record the run's input fingerprints (first stage), or check them (every later stage).
+    With check_code, the search code must also be the version the run was pinned with: a stage
+    that searches or reads traces must not resume on different code. Only bundle (which
+    repackages finished outputs) skips that check."""
     p = pathlib.Path(run_dir) / "inputs.json"
     cur = current_inputs()
     if not p.exists():
         rec = {**cur, "recorded": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
-               "code_fingerprint_at_pin": code_fingerprint()}
+               "code_fingerprint": code_fingerprint()}
         if note:
             rec["note"] = note
         write_json(p, rec)
@@ -195,6 +200,10 @@ def pin_inputs(run_dir, note=None):
         if rec.get(key) != cur[key]:
             raise StudyError(f"{p}: {key} differs from the files this run was made with "
                              f"(recorded {rec.get(key)}, now {cur[key]}). Use a new run id.")
+    if check_code and rec.get("code_fingerprint") != code_fingerprint():
+        raise StudyError(f"{p}: search code changed since this run was pinned "
+                         f"({rec.get('code_fingerprint')} vs {code_fingerprint()}). "
+                         "Use a new run id.")
 
 
 def refuse_overwrite(path):
@@ -252,13 +261,15 @@ def record_trace(run_dir, name, key):
     write_json(p, rec)
 
 
-def load_trace(run_dir, name):
+def load_trace(run_dir, name, check_code=True):
     rec = read_json(pathlib.Path(run_dir) / "traces.json")
     if name not in rec:
         raise StudyError(f"trace {name} is not part of run {pathlib.Path(run_dir).name}")
     tpath, man = verify_cached_trace(rec[name]["key"])
     if man["trace_sha256"] != rec[name]["sha256"]:
         raise StudyError(f"trace {name} changed since the run recorded it")
+    if check_code and man.get("code_lf", man["inputs"]["code"]) != code_fingerprint():
+        raise StudyError(f"trace {name} was made by a different version of the search code")
     return read_trace(tpath)
 
 
@@ -695,7 +706,7 @@ def stage_bundle(run_dir):
     """Seal everything the report needs (full per-pass timings, returned ids and distances, stats,
     test ground truth, oracle inputs, selection, provenance, hashes) into one directory and a .tar.
     The report stage reads only this bundle."""
-    pin_inputs(run_dir)
+    pin_inputs(run_dir, check_code=False)
     out = bundle_dir(run_dir)
     refuse_overwrite(out)
     tr = read_json(run_dir / "test_run.json")
@@ -724,7 +735,7 @@ def stage_bundle(run_dir):
         s = sel.get(f"learned@{r}")
         if s:
             nm = tname("test", s["ef_max"], s["checkpoint"])
-            arrays[f"oracle_{r}__entry"] = entry_evals(load_trace(run_dir, nm), gt_ids)
+            arrays[f"oracle_{r}__entry"] = entry_evals(load_trace(run_dir, nm, check_code=False), gt_ids)
             oracle_inputs[str(r)] = {"ef_max": s["ef_max"], "trace": nm}
     out.mkdir(parents=True)
     np.savez_compressed(out / "arrays.npz", **arrays)
