@@ -1,0 +1,10 @@
+{"cmd": ["build/bench/bench/ann/adaptive_eval", "build", "/data/adaptive/sift_base.fbin", "/data/adaptive/sift_m16_efc200_s101.hnsw", "16", "200", "101"], "rc": 0, "seconds": 360.774099111557}
+{"build_seconds": 358.330505, "threads": 1, "max_level": 5, "memory_bytes": 727111328}
+{"cmd": ["build/bench/bench/ann/adaptive_eval", "trace", "/data/adaptive/sift_m16_efc200_s101.hnsw", "/data/adaptive/sift_test.fbin", "128", "400", "/data/adaptive/traces/stress_test_ef128_c400.trace"], "rc": 0, "seconds": 1.2082021236419678}
+trace: 0.29 s
+{"cmd": ["build/bench/bench/ann/adaptive_eval", "trace", "/data/adaptive/sift_m16_efc200_s101.hnsw", "/data/adaptive/sift_test.fbin", "128", "100", "/data/adaptive/traces/stress_test_ef128_c100.trace"], "rc": 0, "seconds": 0.7760272026062012}
+trace: 0.26 s
+{"cmd": ["build/bench/bench/ann/adaptive_eval", "trace", "/data/adaptive/sift_m16_efc200_s101.hnsw", "/data/adaptive/sift_test.fbin", "256", "400", "/data/adaptive/traces/stress_test_ef256_c400.trace"], "rc": 0, "seconds": 0.9997811317443848}
+trace: 0.46 s
+{"cmd": ["build/bench/bench/ann/adaptive_eval", "trace", "/data/adaptive/sift_m16_efc200_s101.hnsw", "/data/adaptive/sift_test.fbin", "256", "100", "/data/adaptive/traces/stress_test_ef256_c100.trace"], "rc": 0, "seconds": 0.9855377674102783}
+trace: 0.47 s

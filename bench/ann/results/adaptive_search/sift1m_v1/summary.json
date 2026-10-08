@@ -744,7 +744,20 @@
    "evals": 749.177
   }
  },
- "model_overhead": {},
+ "model_overhead": {
+  "gbdt_q_ef128_c400": {
+   "predict_ns": 3848.21,
+   "n": 5000,
+   "reps": 20,
+   "checksum": 631852.646373
+  },
+  "gbdt_q_ef256_c400": {
+   "predict_ns": 3850.76,
+   "n": 5000,
+   "reps": 20,
+   "checksum": 639060.524533
+  }
+ },
  "selection": {
   "learned@0.9": {
    "method": "learned",
@@ -867,8 +880,8 @@
   "python": "3.12.3",
   "numpy": "2.5.3",
   "sklearn": "1.9.1",
-  "git_commit": "1aa033b896be52b99dc6bc30f78186d9995b5ac5",
-  "git_dirty": "8",
+  "git_commit": "2d68af881c71f322b5b66af6cec539c7a55943ba",
+  "git_dirty": "0",
   "index_sha256": "1ff6d63a975485c91f7ebc2512da3f70d1f944a92ada757820e0c87f031b664b"
  }
 }

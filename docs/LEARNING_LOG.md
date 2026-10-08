@@ -298,3 +298,32 @@ allowed ids is faster.
 4. Filters: why traverse filtered-out nodes instead of skipping them? When should a query
    planner switch to brute force?
 5. What does each Dockerfile stage contain, and why is the compiler not in the final image?
+
+## Phase 7: Learned early termination (experiment)
+
+**What was built**
+
+- `HnswIndex::search_adaptive`: a separate copy of the layer-0 loop that can stop at a distance
+  budget, after N expansions without a top-k change (patience), or at a budget predicted by a
+  small model at a checkpoint (Li et al., SIGMOD 2020). `search()` is untouched.
+- `TerminationModel`: versioned text format for a linear model or a tree ensemble, validated on
+  load, evaluated in C++. Training (sklearn) and selection live in `bench/ann/adaptive/`.
+- A pre-registered protocol, learn/val/test splits, exact ground truth, and a single-thread timing
+  harness with per-query outputs.
+
+**What the measurements showed:** on SIFT1M the learned policy cuts layer-0 distance
+evaluations by 7–14% at matched recall but does not reduce latency. The large beam it needs
+makes each evaluation more expensive, and the model adds ~3.9 µs. Patience is nearly as good with
+no model. The audit found that 10% of `sift_learn` is byte-identical to the test queries, which
+would have leaked into training. Details: [adaptive_search/RESULTS.md](adaptive_search/RESULTS.md).
+
+**Interview questions**
+
+1. What does the model predict, and why is the label computable from a single unbudgeted run?
+   (Budgeted search is a prefix of it; a true neighbor in the top-k is never evicted.)
+2. What would have leaked if you had trained on all of `sift_learn`?
+3. Fewer distance evaluations but no faster: why? (Bigger beam per evaluation, model cost.)
+4. Why is ef 128, not ef 160, the fair fixed-ef comparison at the 0.99 target?
+5. Learned missed its validation target on test by 0.0004–0.0045. Why, and how would you fix it?
+   (The multiplier is fitted exactly to validation recall with no margin; calibrate with a margin or a held-out set.)
+6. The oracle needs ~half the evaluations. What limits the learned policy from getting there?
