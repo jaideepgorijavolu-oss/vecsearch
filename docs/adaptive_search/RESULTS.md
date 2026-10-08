@@ -1,15 +1,22 @@
-# Learned early termination for HNSW search: SIFT1M results
+# Learned early termination for HNSW search: SIFT1M and GloVe-100 results
 
-**Short answer: no latency win on SIFT1M.** A small learned policy (a gradient-boosted tree
-model that predicts each query's distance-evaluation budget) reduces layer-0 distance
-evaluations by roughly 7–14% compared with the fixed-ef curve at matched test recall. Its
-single-thread latency is no better than fixed ef or a tuned patience heuristic. Two things
-cancel the saving: the larger beam the policy needs makes every evaluation more expensive, and
-prediction adds overhead. The 0.15 ms search on SIFT leaves little room for this. This matches the
-expectation stated before the study, that a negative result on SIFT was plausible.
+**Short answer: it depends on the dataset.** The policy is a small gradient-boosted tree model
+that predicts each query's distance-evaluation budget.
 
-Protocol and amendments: [PROTOCOL.md](PROTOCOL.md) (committed before the test runs). Raw outputs:
-`bench/ann/results/adaptive_search/sift1m_v1/`. Prior work: Li, Zhang, Andersen, He, "Improving
+- **SIFT1M: no latency win.** At matched test recall the policy cuts layer-0 distance evaluations
+  by 7–14% compared with fixed ef, but single-thread latency is no better than fixed ef or a
+  tuned patience heuristic. The larger beam it needs makes each evaluation more expensive, and
+  prediction adds overhead. A SIFT search takes only ~0.15 ms, so there is little to save. This
+  negative result was anticipated in the protocol.
+- **GloVe-100: a real win at high recall.** At 0.9468 test recall the policy averages 1,114 µs
+  per query (single thread). Fixed ef 768 reaches only 0.9450 recall and takes 1,406 µs, so the
+  policy is **21% faster at higher recall**. On 16 threads the same comparison gives 5,617 vs
+  3,072 QPS for fixed ef 1024 (0.9566 recall). It also missed its 0.95 validation target on test
+  by 0.0032, and its p95/p99 latency is worse. At recall 0.80 it loses.
+
+[Results on GloVe-100](#glove-100) and [multithreaded throughput](#multithreaded-throughput-16-threads)
+are further down. Protocol and amendments: [PROTOCOL.md](PROTOCOL.md), committed before each
+test run. Raw outputs: `bench/ann/results/adaptive_search/{sift1m_v1,glove_v1}/`. Prior work: Li, Zhang, Andersen, He, "Improving
 Approximate Nearest Neighbor Search through Learned Adaptive Early Termination", SIGMOD 2020.
 This study reimplements their HNSW approach (run with a large beam, stop at a predicted budget)
 inside vecsearch and evaluates it. No new method is claimed.
@@ -49,7 +56,7 @@ the unbudgeted one (unit test `Adaptive.BudgetIsPrefixOfFullRun`), so one trace 
 recall at every budget. Simulated validation recall and evaluation counts matched the real
 validation runs exactly.
 
-## Results (test queries)
+## SIFT1M results (test queries)
 
 Settings chosen on validation for each target; recall below is the test result.
 
@@ -113,7 +120,7 @@ margin. These are reported as misses.
 Patience is the hardest simple baseline. At 0.95 it is the fastest method (133 µs), and on SIFT
 it gets most of the learned policy's evaluation savings with no model.
 
-## Stress condition (predefined): rebuilt graph, no retraining
+## Stress condition (SIFT, predefined): rebuilt graph, no retraining
 
 The same policies and multipliers were run on a second snapshot (graph seed 101, sha256
 `a71a09e1…`). Results come from traces (exact for recall and evaluations; not timed). The policy
@@ -127,6 +134,94 @@ transfers:
 
 A changed query distribution or index parameters (M, ef_construction) would need recalibrating
 the multiplier on new validation data at least, and probably retraining.
+
+## GloVe-100
+
+Setup changes (amendment A3):
+- **Training queries:** GloVe has no learn set, so 100,000 random rows of `train` (seed 0) are
+  the training queries and are removed from the index. The base is the remaining 1,083,514 rows,
+  so no training query can find itself. None of the sampled rows duplicate a query, a base row or
+  each other, and no vector has zero norm.
+- **Metric:** cosine (vecsearch normalizes vectors), which ranks exactly like the angular ground
+  truth. Ground truth is recomputed against the reduced base; it cost 934 s for learn and 47 s
+  each for val and test.
+- **Index:** built on 1 thread in 458 s (sha256 `e5a7ca8a…`).
+- **Grids and timing:** ef_max {512, 1024, 2048}, checkpoints {250, 500, 1000}, targets
+  {0.80, 0.90, 0.95}. 3 timed passes instead of 5, because GloVe queries cost ~10× more.
+- **Not comparable with the legacy GloVe JSONs**, which indexed the full train set.
+
+A bug was caught here before any test run. The C++ model sees the **normalized** query vector
+(cosine search normalizes the query first), but training first used the raw query. On validation,
+simulated recall and real recall disagreed (0.800 vs 0.788 at the 0.80 target), which exposed it.
+After the fix (commit "normalize query-vector model inputs for cosine") they match exactly. SIFT
+uses L2 and was not affected.
+
+| target (val) | method | config | test R@10 | mean µs (pass range) | p50 | p95 | p99 | QPS 1-thr | evals |
+|---|---|---|---:|---:|---:|---:|---:|---:|---:|
+| 0.80 | fixed | ef 96 | 0.8062 | 225.1 (224.6–239.2) | 221.8 | 310.9 | 366.3 | 4,443 | 2,117 |
+| 0.80 | cap | ef_max 512 | 0.7976 | 359.7 (334.5–359.8) | 347.6 | 434.8 | 516.9 | 2,780 | 2,317 |
+| 0.80 | patience | ef 256, N 40 | 0.8201 | 270.7 (268.8–276.1) | 243.1 | 510.9 | 642.4 | 3,694 | 2,153 |
+| 0.80 | learned | GBDT+q, ef_max 512 | 0.7994 | 293.4 (293.2–300.3) | 232.0 | 523.0 | 580.8 | 3,409 | 1,889 |
+| 0.90 | fixed | ef 320 | 0.8986 | 631.6 (630.4–637.2) | 638.9 | 819.2 | 924.1 | 1,583 | 5,859 |
+| 0.90 | cap | ef_max 512 | 0.8960 | 780.3 (778.4–840.0) | 779.6 | 894.9 | 1,046.8 | 1,282 | 6,617 |
+| 0.90 | patience | ef 512, N 160 | 0.9070 | 688.3 (645.3–701.9) | 592.3 | 1,305.0 | 1,546.0 | 1,453 | 5,451 |
+| 0.90 | learned | GBDT+q, ef_max 512 | 0.8955 | **548.5** (540.0–570.1) | 440.0 | 1,144.0 | 1,281.9 | 1,823 | 4,322 |
+| 0.95 | fixed | ef 1024 | 0.9566 | 1,840.8 (1,835.0–1,949.2) | 1,866.6 | 2,369.1 | 2,610.5 | 543 | 16,290 |
+| 0.95 | cap | ef_max 1024 | 0.9483 | 1,768.0 (1,751.3–1,836.2) | 1,847.5 | 2,106.3 | 2,320.8 | 566 | 14,961 |
+| 0.95 | learned | GBDT+q, ef_max 1024 | 0.9468 | **1,113.9** (1,107.9–1,147.3) | 842.5 | 2,447.9 | 2,666.7 | 898 | 9,022 |
+
+Patience cannot reach 0.95 on validation anywhere in its grid (N up to 320), so it has no 0.95
+row. Nearby fixed-ef points from the same timed run:
+
+| fixed ef | test R@10 | mean µs (pass range) | p95 | p99 | evals |
+|---:|---:|---:|---:|---:|---:|
+| 256 | 0.8836 | 519.4 (513.1–523.5) | 669 | 748 | 4,828 |
+| 768 | 0.9450 | 1,406.2 (1,401.2–1,406.9) | 1,806 | 1,957 | 12,634 |
+
+![GloVe recall vs latency](../../bench/ann/results/adaptive_search/glove_v1/recall_latency.png)
+
+Against the predeclared rule (beat both fixed ef and patience by more than the pass spread,
+with recall within 0.002):
+
+- **0.95: win.** Fixed ef 768 has *lower* recall (0.9450 < 0.9468) and is 26% slower (1,406 vs
+  1,114 µs mean); the pass ranges are far apart. Patience is infeasible. The win needs one
+  caveat: the policy missed its validation target on test by 0.0032, so the honest statement is
+  "faster at the recall it achieved", not "faster at 0.95".
+- **0.90: not a clean win under the rule.** The recall gap to fixed ef 320 is 0.0031 (> 0.002), and
+  patience lands 0.0115 higher. Interpolating the fixed-ef curve between ef 256 and 320 gives
+  ≈608 µs at 0.8955, about 10% slower than the learned policy's 548.5 µs. That is a reading of the
+  curve, not a matched measurement.
+- **0.80: loss.** Fixed ef 96 is faster (225 vs 293 µs) at higher recall.
+
+Why GloVe and not SIFT: GloVe queries vary far more in difficulty, and an evaluation is a
+smaller share of the cost. Predicted budgets explain more of the variance (validation R² of
+log-budget 0.83 vs 0.66). At 0.95 the policy uses 45% fewer evaluations than fixed ef 1024 and
+29% fewer than ef 768, which outweighs the bigger-beam cost and the 4.8 µs prediction. The
+oracle (4,543 evaluations at 0.95) shows there is still roughly 2× headroom. Tails remain the
+cost: p95/p99 at 0.95 are 2,448/2,667 µs vs 1,806/1,957 for ef 768, because hard queries get a
+large budget.
+
+## Multithreaded throughput (16 threads)
+
+Each matched config runs all 5k test queries in one batch call on 16 threads (all logical CPUs);
+best of 5 runs. Results are checked identical to the single-thread run. Recall is the
+single-thread test recall from the tables above.
+
+| dataset | target | fixed ef (R@10) | patience | learned | cap |
+|---|---|---|---|---|---|
+| SIFT | 0.90 | 60,190 (0.9034) | 60,290 (0.9003) | 60,556 (0.8955) | 53,789 |
+| SIFT | 0.95 | 39,414 (0.9557) | 42,969 (0.9522) | 43,024 (0.9495) | 36,222 |
+| SIFT | 0.99 | 16,455 (0.9938) | 20,199 (0.9910) | 22,552 (0.9896) | 16,521 |
+| GloVe | 0.80 | 24,288 (0.8062) | 23,702 (0.8201) | 24,834 (0.7994) | 20,779 |
+| GloVe | 0.90 | 7,915 (0.8986) | 9,389 (0.9070) | 11,649 (0.8955) | 7,607 |
+| GloVe | 0.95 | 3,072 (0.9566) | — | 5,617 (0.9468) | 3,356 |
+
+With 16 threads competing for memory bandwidth, fewer distance evaluations matter more than on
+one thread, so the learned policy does relatively better. The recall caveats above still apply:
+in several rows the fixed-ef point has higher recall. On SIFT, learned and patience are within a
+few percent of each other everywhere. The fixed-ef points closest to the learned recall (SIFT
+ef 128, GloVe ef 768) were not run multithreaded, so no matched-recall multithread speedup is
+claimed.
 
 ## Checks run
 
@@ -142,18 +237,19 @@ the multiplier on new validation data at least, and probably retraining.
 - `search()` code path unchanged: the new loop is a separate function. The regression check is
   the existing test suite. As a sanity check, fixed ef 64 on this snapshot gives 0.9645 on the
   5k test queries, against the legacy 0.9635 on all 10k with a different graph.
-- **Not run:** pytest and the service tests (Python bindings untouched; `search_adaptive` is C++
-  only). Legacy benchmark files were not regenerated and are not compared with these timings.
+- Python: wheel built and `pytest tests/python` 73/73 passed, README example ran (bindings
+  untouched; `search_adaptive` is C++ only). **Not run:** the service tests. Legacy benchmark files
+  were not regenerated and are not compared with these timings.
 
 ## Limitations
 
-- SIFT1M only, single thread, one graph snapshot for timing, 5 timed passes. GloVe (where
-  queries vary more and per-query cost is ~10× higher) and multithreaded throughput were not run.
-  The addendum expects GloVe to benefit more, but that is untested here.
+- One graph snapshot per dataset for timing; 5 timed passes (SIFT) or 3 (GloVe). Multithread
+  numbers are best-of-5 batch runs, and only for the matched configs.
+- Each dataset has its own model; no cross-dataset transfer was tested.
 - Validated only for unfiltered search on a static index. With deletions the model is ignored and
   plain ef search runs. Filters are not supported by `search_adaptive`.
 - WSL2 inside Docker on a laptop: timings are comparable within this run only.
-- Training cost: 873 s of brute-force ground truth plus ~5 s per training trace and a few minutes
+- Training cost: 873 s (SIFT) and 934 s (GloVe) of brute-force ground truth plus ~5 s per training trace and a few minutes
   of model fitting. This is not counted in per-query latency.
 - One model family, one feature set, no hyperparameter tuning of the GBDT. Larger feature sets or
   checking the budget more than once might close more of the oracle gap.
@@ -163,8 +259,12 @@ the multiplier on new validation data at least, and probably retraining.
 ```bash
 docker build -t vecsearch-dev -f docker/dev.Dockerfile docker
 tools/dev.sh "bench/ann/adaptive/prepare_all.sh bench/ann/results/adaptive_search/sift1m_v1"   # ~25 min
-for s in traces select test report stress; do
+for s in traces select test report stress mt; do
   tools/dev.sh "python3 bench/ann/adaptive/study.py $s bench/ann/results/adaptive_search/sift1m_v1"
+done
+tools/dev.sh "bench/ann/adaptive/prepare_glove_all.sh bench/ann/results/adaptive_search/glove_v1"  # ~25 min
+for s in traces select test report mt; do
+  tools/dev.sh "DATASET=glove python3 bench/ann/adaptive/study.py $s bench/ann/results/adaptive_search/glove_v1"
 done
 ```
 

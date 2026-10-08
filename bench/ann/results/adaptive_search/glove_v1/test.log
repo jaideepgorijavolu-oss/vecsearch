@@ -1,0 +1,7 @@
+{"cmd": ["build/bench/bench/ann/adaptive_eval", "run", "/data/adaptive/glove_m16_efc200_s100.hnsw", "/data/adaptive/glove_test.fbin", "/data/adaptive/runs_glove/test_evals/configs.txt", "0", "/data/adaptive/runs_glove/test_evals"], "rc": 0, "seconds": 94.32803416252136}
+pass 0/0 done
+{"cmd": ["taskset", "-c", "3", "build/bench/bench/ann/adaptive_eval", "run", "/data/adaptive/glove_m16_efc200_s100.hnsw", "/data/adaptive/glove_test.fbin", "/data/adaptive/runs_glove/test/configs.txt", "3", "/data/adaptive/runs_glove/test"], "rc": 0, "seconds": 466.0510244369507}
+pass 0/3 done
+pass 1/3 done
+pass 2/3 done
+pass 3/3 done

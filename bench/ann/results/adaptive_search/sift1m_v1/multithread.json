@@ -1,0 +1,86 @@
+[
+ {
+  "name": "fixed_ef32",
+  "threads": 16,
+  "reps": 5,
+  "best_seconds": 0.083071,
+  "qps": 60189.5
+ },
+ {
+  "name": "fixed_ef56",
+  "threads": 16,
+  "reps": 5,
+  "best_seconds": 0.12686,
+  "qps": 39413.5
+ },
+ {
+  "name": "fixed_ef160",
+  "threads": 16,
+  "reps": 5,
+  "best_seconds": 0.303854,
+  "qps": 16455.3
+ },
+ {
+  "name": "learned_0.9",
+  "threads": 16,
+  "reps": 5,
+  "best_seconds": 0.082568,
+  "qps": 60556.3
+ },
+ {
+  "name": "cap_0.9",
+  "threads": 16,
+  "reps": 5,
+  "best_seconds": 0.092956,
+  "qps": 53789.0
+ },
+ {
+  "name": "learned_0.95",
+  "threads": 16,
+  "reps": 5,
+  "best_seconds": 0.116214,
+  "qps": 43024.1
+ },
+ {
+  "name": "cap_0.95",
+  "threads": 16,
+  "reps": 5,
+  "best_seconds": 0.138036,
+  "qps": 36222.5
+ },
+ {
+  "name": "learned_0.99",
+  "threads": 16,
+  "reps": 5,
+  "best_seconds": 0.22171,
+  "qps": 22551.9
+ },
+ {
+  "name": "cap_0.99",
+  "threads": 16,
+  "reps": 5,
+  "best_seconds": 0.302651,
+  "qps": 16520.7
+ },
+ {
+  "name": "patience_0.9",
+  "threads": 16,
+  "reps": 5,
+  "best_seconds": 0.082932,
+  "qps": 60290.0
+ },
+ {
+  "name": "patience_0.95",
+  "threads": 16,
+  "reps": 5,
+  "best_seconds": 0.116363,
+  "qps": 42969.1
+ },
+ {
+  "name": "patience_0.99",
+  "threads": 16,
+  "reps": 5,
+  "best_seconds": 0.247534,
+  "qps": 20199.3
+ }
+]
