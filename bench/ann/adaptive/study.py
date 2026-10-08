@@ -1,14 +1,27 @@
-"""Adaptive-search study on SIFT1M (docs/adaptive_search/PROTOCOL.md). Run in the dev container.
+"""Adaptive-search study (docs/adaptive_search/PROTOCOL.md). Run in the dev container.
 
-  python3 bench/ann/adaptive/study.py <stage> <run_dir>
+  DATASET=sift|glove python3 bench/ann/adaptive/study.py <stage> <run_dir>
 
-Stages, in order:
-  traces   unbudgeted search traces (all threads) for learn / val / test at every ef_max and checkpoint
-  select   train models on learn; pick every method's setting on val (simulation + real val runs)
+The run id is the name of <run_dir> (e.g. bench/ann/results/adaptive_search/sift1m_v1). Stages:
+  traces   unbudgeted search traces for learn / val / test at every ef_max and checkpoint
+  select   train models on learn; pick every method's setting on val (simulation + real runs)
   test     single-thread timing runs on the final test queries (needs a quiet machine)
-  report   tables, plots and summary.json from the raw outputs
+  bundle   seal the raw test outputs into an audit bundle ($VECSEARCH_DATA/adaptive/bundles)
+  report   tables, plots and summary.json, regenerated only from the audit bundle
+  stress   (SIFT) the selected policies on a rebuilt graph, no retraining
+  mt       16-thread throughput of the matched configs
+  adopt    one-off: bring a run made before run isolation existed under these rules
 
-Large intermediate files live in $VECSEARCH_DATA/adaptive; small outputs in <run_dir>.
+Isolation rules (added after review; see PROTOCOL.md A4):
+  * Raw outputs of a run live in $VECSEARCH_DATA/adaptive/runs_by_id/<run id>/, never shared.
+  * inputs.json in the run dir pins the sha256 of the index, query, base and ground-truth files.
+    Every stage checks them; a rebuilt index or changed data stops the run with an error.
+  * Traces are cached by a key over (index, query file, search-code fingerprint, ef, checkpoint)
+    and carry a manifest with their own sha256; damaged or mismatched cache files are rejected.
+    traces.json in the run dir lists exactly which traces the run used.
+  * select, test and bundle refuse to overwrite their own completed outputs. Use a new run id.
+  * The measurement environment is recorded by the test stage; reports keep it and record their
+    own environment separately.
 """
 
 from __future__ import annotations
@@ -18,8 +31,10 @@ import json
 import os
 import pathlib
 import platform
+import shutil
 import subprocess
 import sys
+import tarfile
 import time
 
 import numpy as np
@@ -46,19 +61,33 @@ EF_MAX, CHECKPOINTS, TARGETS = GRIDS["ef_max"], GRIDS["checkpoints"], GRIDS["tar
 FIXED_EF, PATIENCE_EF, PATIENCE_N = GRIDS["fixed_ef"], GRIDS["patience_ef"], GRIDS["patience_n"]
 PASSES = GRIDS["passes"]
 F = 9  # kNumTerminationFeatures
-FEATURE_NAMES = ["log_entry", "log_d1", "log_dk", "d1/entry", "dk/entry", "dk/d1", "cand/dk",
-                 "stale_frac", "topk_changes"]
+BUNDLE_FORMAT = 1
 
+ROOT = pathlib.Path(__file__).resolve().parents[3]
 DATA = pathlib.Path(os.environ.get("VECSEARCH_DATA", "/data")) / "adaptive"
-TOOL = "build/bench/bench/ann/adaptive_eval"
+TOOL = os.environ.get("VECSEARCH_ADAPTIVE_EVAL", str(ROOT / "build/bench/bench/ann/adaptive_eval"))
 INDEX = DATA / f"{DS}_m16_efc200_s100.hnsw"
-SUB = "" if DS == "sift" else f"_{DS}"  # sift keeps its original directory names
+# Sources whose behavior determines a trace. Any edit (even formatting) changes the fingerprint
+# and therefore the cache key: conservative, and traces are cheap to regenerate.
+CODE_FILES = ["src/index/hnsw_index.cpp", "include/vecsearch/hnsw_index.hpp",
+              "src/index/termination_model.cpp", "include/vecsearch/termination_model.hpp",
+              "src/distance/avx2.cpp", "src/distance/dispatch.cpp", "src/distance/scalar.cpp",
+              "src/distance/neon.cpp", "include/vecsearch/distance.hpp",
+              "include/vecsearch/visited_list.hpp", "bench/ann/adaptive_eval.cpp"]
 
 
-# ---------------------------------------------------------------- io
+class StudyError(RuntimeError):
+    pass
+
+
+# ---------------------------------------------------------------- io and fingerprints
 
 def fbin(name):
     return DATA / f"{DS}_{name}.fbin"
+
+
+def gt_path(split):
+    return DATA / f"{DS}_{split}.gt"
 
 
 def read_fbin(path):
@@ -76,7 +105,7 @@ def model_queries(split):
 
 
 def read_gt(split):
-    path = DATA / f"{DS}_{split}.gt"
+    path = gt_path(split)
     nq, k = np.fromfile(path, dtype=np.uint64, count=2).astype(int)
     ids = np.fromfile(path, dtype=np.int64, offset=16, count=nq * k).reshape(nq, k)
     dists = np.fromfile(path, dtype=np.float32, offset=16 + 8 * nq * k).reshape(nq, k)
@@ -95,16 +124,36 @@ def read_trace(path):
     return t
 
 
-def trace_path(split, ef, c):
-    return DATA / f"traces{SUB}" / f"{split}_ef{ef}_c{c}.trace"
+_SHA_MEMO: dict = {}
 
 
 def sha256(path):
+    """sha256 of a file, memoized on (path, size, mtime) so large inputs are hashed once."""
+    path = pathlib.Path(path)
+    st = path.stat()
+    memo_key = (str(path), st.st_size, st.st_mtime_ns)
+    if memo_key not in _SHA_MEMO:
+        h = hashlib.sha256()
+        with open(path, "rb") as f:
+            for chunk in iter(lambda: f.read(1 << 24), b""):
+                h.update(chunk)
+        _SHA_MEMO[memo_key] = h.hexdigest()
+    return _SHA_MEMO[memo_key]
+
+
+def code_fingerprint():
     h = hashlib.sha256()
-    with open(path, "rb") as f:
-        for chunk in iter(lambda: f.read(1 << 24), b""):
-            h.update(chunk)
+    for rel in CODE_FILES:
+        h.update(rel.encode() + b"\0" + (ROOT / rel).read_bytes() + b"\0")
     return h.hexdigest()
+
+
+def write_json(path, obj):
+    pathlib.Path(path).write_text(json.dumps(obj, indent=1, default=float))
+
+
+def read_json(path):
+    return json.loads(pathlib.Path(path).read_text())
 
 
 def sh(cmd, log):
@@ -114,8 +163,107 @@ def sh(cmd, log):
         f.write(json.dumps({"cmd": cmd, "rc": r.returncode, "seconds": time.time() - t0}) + "\n")
         f.write(r.stdout + r.stderr)
     if r.returncode != 0:
-        raise RuntimeError(f"{cmd} failed: {r.stderr[-2000:]}")
+        raise StudyError(f"{cmd} failed: {r.stderr[-2000:]}")
     return r.stdout
+
+
+# ---------------------------------------------------------------- run isolation
+
+def runs_dir(run_dir):
+    return DATA / "runs_by_id" / pathlib.Path(run_dir).name
+
+
+def current_inputs():
+    return {"dataset": DS, "index": {INDEX.name: sha256(INDEX)},
+            "fbin": {s: sha256(fbin(s)) for s in ["base", "learn", "val", "test"]},
+            "gt": {s: sha256(gt_path(s)) for s in ["learn", "val", "test"]}}
+
+
+def pin_inputs(run_dir, note=None):
+    """Record the run's input fingerprints (first stage), or check them (every later stage)."""
+    p = pathlib.Path(run_dir) / "inputs.json"
+    cur = current_inputs()
+    if not p.exists():
+        rec = {**cur, "recorded": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+               "code_fingerprint_at_pin": code_fingerprint()}
+        if note:
+            rec["note"] = note
+        write_json(p, rec)
+        return
+    rec = read_json(p)
+    for key in ["dataset", "index", "fbin", "gt"]:
+        if rec.get(key) != cur[key]:
+            raise StudyError(f"{p}: {key} differs from the files this run was made with "
+                             f"(recorded {rec.get(key)}, now {cur[key]}). Use a new run id.")
+
+
+def refuse_overwrite(path):
+    if pathlib.Path(path).exists():
+        raise StudyError(f"{path} exists: this stage already completed for this run. "
+                         "Results are never overwritten; use a new run directory.")
+
+
+def trace_key(index, queries, ef, c):
+    spec = {"index": sha256(index), "queries": sha256(queries), "code": code_fingerprint(),
+            "ef": int(ef), "checkpoint": int(c), "k": K}
+    return hashlib.sha256(json.dumps(spec, sort_keys=True).encode()).hexdigest()[:32], spec
+
+
+def cache_paths(key):
+    d = DATA / "trace_cache"
+    return d / f"{key}.trace", d / f"{key}.json"
+
+
+def verify_cached_trace(key):
+    tpath, mpath = cache_paths(key)
+    if not (tpath.exists() and mpath.exists()):
+        raise StudyError(f"trace {key} missing from the cache")
+    man = read_json(mpath)
+    if man.get("key") != key or sha256(tpath) != man.get("trace_sha256"):
+        raise StudyError(f"trace cache entry {key} is damaged or does not match its manifest")
+    return tpath, man
+
+
+def ensure_trace(index, queries, ef, c, log):
+    """Path of the trace for these exact inputs, generating it if the cache has no valid entry."""
+    key, spec = trace_key(index, queries, ef, c)
+    tpath, mpath = cache_paths(key)
+    if tpath.exists() or mpath.exists():
+        verify_cached_trace(key)  # raises on a damaged or mismatched entry; never regenerates over it
+        return key
+    tpath.parent.mkdir(parents=True, exist_ok=True)
+    tmp = tpath.with_suffix(".part")
+    sh([TOOL, "trace", str(index), str(queries), str(ef), str(c), str(tmp)], log)
+    tmp.rename(tpath)
+    write_json(mpath, {"key": key, "inputs": spec, "trace_sha256": sha256(tpath),
+                       "index_file": str(index), "queries_file": str(queries),
+                       "created": time.strftime("%Y-%m-%dT%H:%M:%S%z")})
+    return key
+
+
+def record_trace(run_dir, name, key):
+    p = pathlib.Path(run_dir) / "traces.json"
+    rec = read_json(p) if p.exists() else {}
+    _, man = verify_cached_trace(key)
+    if name in rec and rec[name]["key"] != key:
+        raise StudyError(f"{p}: {name} was made from different inputs or code "
+                         f"({rec[name]['key']} vs {key}). Use a new run id.")
+    rec[name] = {"key": key, "sha256": man["trace_sha256"]}
+    write_json(p, rec)
+
+
+def load_trace(run_dir, name):
+    rec = read_json(pathlib.Path(run_dir) / "traces.json")
+    if name not in rec:
+        raise StudyError(f"trace {name} is not part of run {pathlib.Path(run_dir).name}")
+    tpath, man = verify_cached_trace(rec[name]["key"])
+    if man["trace_sha256"] != rec[name]["sha256"]:
+        raise StudyError(f"trace {name} changed since the run recorded it")
+    return read_trace(tpath)
+
+
+def tname(split, ef, c):
+    return f"{split}/ef{ef}/c{c}"
 
 
 # ---------------------------------------------------------------- labels and simulation
@@ -186,13 +334,13 @@ def fit_cap(entry, total, target):
 def greedy_oracle(entry, target):
     """Diagnostic only (uses ground truth): per-query stopping points chosen greedily, cheapest
     additional true neighbor first, until mean recall reaches the target. Not deployable."""
+    import heapq
     nq = len(entry)
     steps = np.sort(np.where(np.isfinite(entry), entry, np.inf), axis=1)
     pos = np.zeros(nq, dtype=int)
     cur = np.zeros(nq)
     need = int(np.ceil(target * nq * K))
     have = 0
-    import heapq
     heap = [(steps[q, 0], q) for q in range(nq) if np.isfinite(steps[q, 0])]
     heapq.heapify(heap)
     while have < need and heap:
@@ -268,12 +416,49 @@ def write_model(model, path, checkpoint, query_dim):
     pathlib.Path(path).write_text("\n".join(lines) + "\n")
 
 
+def parse_model(tok):
+    i = tok.index("bias")
+    kind = tok[tok.index("kind") + 1]
+    m = {"kind": kind, "bias": float(tok[i + 1])}
+    if kind == "linear":
+        n = int(tok[i + 3])
+        m["weights"] = [float(x) for x in tok[i + 4:i + 4 + n]]
+        return m
+    j, trees = i + 4, []
+    for _ in range(int(tok[i + 3])):
+        n = int(tok[j + 1]); j += 2
+        trees.append([(int(tok[j + 5 * a]), float(tok[j + 5 * a + 1]), int(tok[j + 5 * a + 2]),
+                       int(tok[j + 5 * a + 3]), float(tok[j + 5 * a + 4])) for a in range(n)])
+        j += 5 * n
+    m["trees"] = trees
+    return m
+
+
+def model_hashes(run_dir):
+    return {p.name: sha256(p) for p in sorted((pathlib.Path(run_dir) / "models").glob("*.txt"))}
+
+
+def verify_models(run_dir, names):
+    rec = read_json(pathlib.Path(run_dir) / "models.sha256.json")
+    for n in names:
+        p = pathlib.Path(run_dir) / "models" / n
+        if rec.get(n) != sha256(p):
+            raise StudyError(f"model {p} differs from the one selection recorded")
+
+
 # ---------------------------------------------------------------- runs
 
+STATS_DTYPE = np.dtype([("evals", "<u4"), ("exp", "<u4"), ("budget", "<u4"), ("stop", "u1"),
+                        ("model_used", "u1")])
+
+
 def run_configs(run_dir, name, split, configs, passes, log):
-    """configs: list of (name, kind, ef, max_evals, patience, model_path, mult)."""
-    out = DATA / f"runs{SUB}" / name
-    out.mkdir(parents=True, exist_ok=True)
+    """configs: list of (name, kind, ef, max_evals, patience, model_path, mult). Raw outputs go
+    to this run's own directory; an existing stage directory is never reused or overwritten."""
+    out = runs_dir(run_dir) / name
+    if out.exists():
+        raise StudyError(f"{out} exists: raw outputs of this run are never overwritten")
+    out.mkdir(parents=True)
     cfg = out / "configs.txt"
     cfg.write_text("".join(" ".join(str(x) for x in c) + "\n" for c in configs))
     cmd = [TOOL, "run", str(INDEX), str(fbin(split)), str(cfg), str(passes), str(out)]
@@ -287,41 +472,62 @@ def load_runs(out, names, passes):
     res = {}
     for n in names:
         ids = np.fromfile(out / f"{n}.ids", dtype=np.int64).reshape(-1, K)
-        st = np.fromfile(out / f"{n}.stats", dtype=np.dtype([("evals", "<u4"), ("exp", "<u4"),
-                                                             ("budget", "<u4"), ("stop", "u1"),
-                                                             ("model_used", "u1")]))
+        st = np.fromfile(out / f"{n}.stats", dtype=STATS_DTYPE)
         lat = np.fromfile(out / f"{n}.lat", dtype=np.int64)
-        res[n] = {"ids": ids, "stats": st,
-                  "lat": lat.reshape(passes, -1) if passes > 0 else None}
+        res[n] = {"ids": ids, "stats": st, "lat": lat.reshape(passes, -1) if passes > 0 else None}
     return res
 
 
-def recall_rows(ids, gt_ids, gt_d, base, queries):
-    by_id = np.array([len(set(a) & set(b)) for a, b in zip(ids.tolist(), gt_ids.tolist())]) / K
-    # Tie-aware: a returned point counts if it is no further than the true k-th neighbor.
+def returned_dists(ids, base, queries):
     if METRIC == "cosine":
         unit = lambda x: x / np.maximum(np.linalg.norm(x, axis=-1, keepdims=True), 1e-30)  # noqa: E731
-        d = 1 - (unit(base[ids]) * unit(queries)[:, None, :]).sum(-1)
-    else:
-        d = ((base[ids] - queries[:, None, :]) ** 2).sum(-1)
-    tie = (d <= gt_d[:, -1:] * (1 + 1e-6) + 1e-6).sum(1) / K
+        return (1 - (unit(base[ids]) * unit(queries)[:, None, :]).sum(-1)).astype(np.float32)
+    return ((base[ids] - queries[:, None, :]) ** 2).sum(-1).astype(np.float32)
+
+
+def recall_from(ids, dists, gt_ids, gt_d):
+    by_id = np.array([len(set(a) & set(b)) for a, b in zip(ids.tolist(), gt_ids.tolist())]) / K
+    # Tie-aware: a returned point counts if it is no further than the true k-th neighbor.
+    tie = (dists <= gt_d[:, -1:] * (1 + 1e-6) + 1e-6).sum(1) / K
     return by_id, tie
+
+
+def recall_rows(ids, gt_ids, gt_d, base, queries):
+    return recall_from(ids, returned_dists(ids, base, queries), gt_ids, gt_d)
+
+
+def environment():
+    def cmd(c):
+        try:
+            return subprocess.run(c, capture_output=True, text=True, shell=True, cwd=ROOT).stdout.strip()
+        except Exception as e:  # noqa: BLE001
+            return str(e)
+    import sklearn
+    return {"captured": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+            "cpu": cmd("grep -m1 'model name' /proc/cpuinfo | cut -d: -f2"),
+            "nproc": os.cpu_count(), "kernel": platform.platform(),
+            "compiler": cmd("g++ --version | head -1"),
+            "build": "CMake preset 'bench' (Release, -O3), AVX2 kernels",
+            "tool_sha256": sha256(TOOL), "python": platform.python_version(),
+            "numpy": np.__version__, "sklearn": sklearn.__version__,
+            "git_commit": cmd("git rev-parse HEAD"), "git_dirty_files": cmd("git status --porcelain | wc -l"),
+            "code_fingerprint": code_fingerprint(), "index_sha256": sha256(INDEX)}
 
 
 # ---------------------------------------------------------------- stages
 
 def stage_traces(run_dir):
-    (DATA / f"traces{SUB}").mkdir(exist_ok=True)
+    pin_inputs(run_dir)
     log = run_dir / "traces.log"
     for split in ["learn", "val", "test"]:
         for ef in EF_MAX:
             for c in CHECKPOINTS:
-                p = trace_path(split, ef, c)
-                if not p.exists():
-                    sh([TOOL, "trace", str(INDEX), str(fbin(split)), str(ef), str(c), str(p)], log)
+                record_trace(run_dir, tname(split, ef, c), ensure_trace(INDEX, fbin(split), ef, c, log))
 
 
 def stage_select(run_dir):
+    pin_inputs(run_dir)
+    refuse_overwrite(run_dir / "selection.json")
     log = run_dir / "select.log"
     learn_gt, _ = read_gt("learn")
     val_gt, val_gt_d = read_gt("val")
@@ -331,7 +537,8 @@ def stage_select(run_dir):
     sim, chosen = [], {}
 
     for ef in EF_MAX:
-        tl, tv = read_trace(trace_path("learn", ef, CHECKPOINTS[0])), read_trace(trace_path("val", ef, CHECKPOINTS[0]))
+        tl = load_trace(run_dir, tname("learn", ef, CHECKPOINTS[0]))
+        tv = load_trace(run_dir, tname("val", ef, CHECKPOINTS[0]))
         el, ev = entry_evals(tl, learn_gt), entry_evals(tv, val_gt)
         tot_l, tot_v = tl["evals"].astype(float), tv["evals"].astype(float)
         full_rec = simulate(ev, tot_v, tot_v)[0].mean()
@@ -343,7 +550,7 @@ def stage_select(run_dir):
                 sim.append({"method": "cap", "ef_max": ef, "target": r, "max_evals": cap,
                             "recall": rec.mean(), "evals": e.mean()})
         for c in CHECKPOINTS:
-            tl, tv = read_trace(trace_path("learn", ef, c)), read_trace(trace_path("val", ef, c))
+            tl, tv = load_trace(run_dir, tname("learn", ef, c)), load_trace(run_dir, tname("val", ef, c))
             y = np.log(label_evals(el, tot_l, c))
             train = tl["valid"] & (tot_l > c)
             for use_q in [False, True]:
@@ -367,6 +574,7 @@ def stage_select(run_dir):
                     write_model(m, models_dir / f"{tag}.txt", c, Ql.shape[1] if use_q else 0)
                     with open(log, "a") as f:
                         f.write(f"{tag}: val R^2(log T) {r2:.4f}\n")
+    write_json(run_dir / "models.sha256.json", model_hashes(run_dir))
 
     # Learned and cap: the setting with the fewest simulated val evaluations at each target.
     for r in TARGETS:
@@ -384,9 +592,9 @@ def stage_select(run_dir):
     val_runs = []
     for name, res in runs.items():
         rec, tie = recall_rows(res["ids"], val_gt, val_gt_d, base, Qv)
-        # Fixed-ef runs record no stats; count their evaluations with the equivalent adaptive run.
         val_runs.append({"name": name, "recall": rec.mean(), "recall_tie": tie.mean(),
                          "evals": float(res["stats"]["evals"].mean())})
+    # Fixed-ef runs record no stats; count their evaluations with the equivalent adaptive run.
     fixed_evals = run_configs(run_dir, "val_fixed_evals", "val",
                               [(f"fixed_ef{ef}", "adaptive", ef, 0, 0, "-", 1) for ef in FIXED_EF], 0, log)
     for v in val_runs:
@@ -416,16 +624,12 @@ def stage_select(run_dir):
             s["val_recall_real"] = rec.mean()
             s["val_evals_real"] = float(real[n]["stats"]["evals"].mean())
 
-    (run_dir / "selection.json").write_text(json.dumps(
-        {"chosen": chosen, "simulated": sim, "val_runs": val_runs}, indent=1, default=float))
+    write_json(run_dir / "selection.json", {"chosen": chosen, "simulated": sim, "val_runs": val_runs})
     print(json.dumps(chosen, indent=1, default=float))
 
 
-def stage_test(run_dir):
-    sel = json.loads((run_dir / "selection.json").read_text())["chosen"]
-    log = run_dir / "test.log"
+def test_configs(run_dir, sel):
     configs = [(f"fixed_ef{ef}", "fixed", ef, 0, 0, "-", 1) for ef in FIXED_EF]
-    seen = {c[0] for c in configs}
     for key, s in sel.items():
         method, r = key.split("@")
         name = f"{method}_{r}"
@@ -439,46 +643,147 @@ def stage_test(run_dir):
         else:
             configs.append((name, "adaptive", s["ef_max"], 0, 0,
                             str(run_dir / "models" / f"{s['model']}.txt"), repr(float(s["multiplier"]))))
-    assert len({c[0] for c in configs}) == len(configs) and seen
+    assert len({c[0] for c in configs}) == len(configs)
+    return configs
+
+
+def measure_overhead(run_dir, sel, log):
+    """Model inference cost (C++ microbenchmark) for each chosen learned model."""
+    overhead = {}
+    for r in TARGETS:
+        s = sel.get(f"learned@{r}")
+        if s:
+            t = load_trace(run_dir, tname("val", s["ef_max"], s["checkpoint"]))
+            fpath = runs_dir(run_dir) / "overhead_inputs.f32"
+            X = t["features"][t["valid"]]
+            if s["use_query"]:
+                X = np.hstack([X, model_queries("val")[t["valid"]]])
+            X.astype(np.float32).tofile(fpath)
+            out = sh([TOOL, "overhead", str(run_dir / "models" / f"{s['model']}.txt"), str(fpath), "20"], log)
+            overhead[s["model"]] = json.loads(out.strip().splitlines()[-1])
+    return overhead
+
+
+def stage_test(run_dir):
+    pin_inputs(run_dir)
+    refuse_overwrite(run_dir / "test_run.json")
+    sel = read_json(run_dir / "selection.json")["chosen"]
+    log = run_dir / "test.log"
+    configs = test_configs(run_dir, sel)
+    verify_models(run_dir, [pathlib.Path(c[5]).name for c in configs if c[5] != "-"])
+    env = environment()  # measurement provenance, captured when the measurement runs
     # Distance-evaluation counts for fixed ef come from the equivalent adaptive run (untimed).
     run_configs(run_dir, "test_evals", "test",
                 [(f"evals_ef{ef}", "adaptive", ef, 0, 0, "-", 1) for ef in FIXED_EF], 0, log)
     t0 = time.time()
     run_configs(run_dir, "test", "test", configs, PASSES, log)
-    env = {"started": time.strftime("%Y-%m-%dT%H:%M:%S%z", time.localtime(t0)),
+    rec = {"started": time.strftime("%Y-%m-%dT%H:%M:%S%z", time.localtime(t0)),
            "seconds": time.time() - t0, "passes": PASSES, "warmup_passes": 1,
            "pinned_cpu": 3, "threads": 1, "order": "config order rotated by one each pass",
-           "configs": configs}
-    (run_dir / "test_run.json").write_text(json.dumps(env, indent=1))
+           "configs": configs, "environment": env,
+           "model_overhead": measure_overhead(run_dir, sel, log)}
+    write_json(run_dir / "test_run.json", rec)
 
 
-def stage_report(run_dir):
+# ---------------------------------------------------------------- audit bundle and report
+
+def bundle_dir(run_dir):
+    return DATA / "bundles" / pathlib.Path(run_dir).name
+
+
+def stage_bundle(run_dir):
+    """Seal everything the report needs (full per-pass timings, returned ids and distances, stats,
+    test ground truth, oracle inputs, selection, provenance, hashes) into one directory and a .tar.
+    The report stage reads only this bundle."""
+    pin_inputs(run_dir)
+    out = bundle_dir(run_dir)
+    refuse_overwrite(out)
+    tr = read_json(run_dir / "test_run.json")
+    sel = read_json(run_dir / "selection.json")["chosen"]
+    raw = runs_dir(run_dir)
+    names = [c[0] for c in tr["configs"] if not c[0].startswith("evals_")]
+    res = load_runs(raw / "test", names, tr["passes"])
+    ev_dir = raw / "test_evals"
+    if (ev_dir / f"evals_ef{FIXED_EF[0]}.stats").exists():
+        ev = load_runs(ev_dir, [f"evals_ef{ef}" for ef in FIXED_EF], 0)
+    else:  # the first SIFT run timed the evaluation-count configs in the same pass as the rest
+        ev = load_runs(raw / "test", [f"evals_ef{ef}" for ef in FIXED_EF], tr["passes"])
+    gt_ids, gt_d = read_gt("test")
+    base, Qt = read_fbin(fbin("base")), read_fbin(fbin("test"))
+
+    arrays = {"gt_ids": gt_ids, "gt_dists": gt_d}
+    for n, r in res.items():
+        arrays[f"{n}__ids"] = r["ids"]
+        arrays[f"{n}__dists"] = returned_dists(r["ids"], base, Qt)
+        arrays[f"{n}__lat_ns"] = r["lat"]
+        arrays[f"{n}__stats"] = r["stats"]
+    for n, r in ev.items():
+        arrays[f"{n}__stats"] = r["stats"]
+    oracle_inputs = {}
+    for r in TARGETS:
+        s = sel.get(f"learned@{r}")
+        if s:
+            nm = tname("test", s["ef_max"], s["checkpoint"])
+            arrays[f"oracle_{r}__entry"] = entry_evals(load_trace(run_dir, nm), gt_ids)
+            oracle_inputs[str(r)] = {"ef_max": s["ef_max"], "trace": nm}
+    out.mkdir(parents=True)
+    np.savez_compressed(out / "arrays.npz", **arrays)
+
+    legacy = {}
+    if "environment" not in tr:  # runs made before the test stage recorded provenance itself
+        old = read_json(run_dir / "summary.json")
+        legacy = {"environment": {**old["environment"], "note": (
+            "Legacy run: the test stage did not record its environment. Captured by the first "
+            "report generation right after the timing run, on the same machine; git_commit is "
+            "the commit checked out at that moment.")},
+            "model_overhead": {"values": old["model_overhead"], "note": (
+                "Measured by the first report generation on the same machine, not by the test stage.")}}
+    meta = {
+        "format": BUNDLE_FORMAT, "dataset": DS, "metric": METRIC, "run_id": pathlib.Path(run_dir).name,
+        "k": K, "targets": TARGETS, "fixed_ef": FIXED_EF, "configs": names,
+        "selection": sel, "test_run": tr, "oracle": oracle_inputs,
+        "measurement_environment": tr.get("environment", legacy.get("environment")),
+        "model_overhead": tr.get("model_overhead", legacy.get("model_overhead")),
+        "inputs": read_json(run_dir / "inputs.json"), "traces": read_json(run_dir / "traces.json"),
+        "models_sha256": read_json(run_dir / "models.sha256.json"),
+        "raw_files_sha256": {str(p.relative_to(raw)): sha256(p) for p in sorted(raw.rglob("*")) if p.is_file()},
+        "bundled": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+    }
+    for extra in ["multithread.json", "stress.json", "split_manifest.json"]:
+        if (run_dir / extra).exists():
+            meta[f"file_sha256:{extra}"] = sha256(run_dir / extra)
+    write_json(out / "meta.json", meta)
+    shutil.copy(run_dir / "selection.json", out / "selection.json")
+    tar = out.parent / f"{meta['run_id']}_audit_bundle.tar"
+    with tarfile.open(tar, "w") as t:
+        for f in ["arrays.npz", "meta.json", "selection.json"]:
+            t.add(out / f, arcname=f"{meta['run_id']}/{f}")
+    write_json(run_dir / "bundle.json", {
+        "file": tar.name, "sha256": sha256(tar), "bytes": tar.stat().st_size,
+        "arrays_sha256": sha256(out / "arrays.npz"), "meta_sha256": sha256(out / "meta.json"),
+        "release": "https://github.com/jaideepgorijavolu-oss/vecsearch/releases/tag/adaptive-search-data-v1"})
+    print(f"wrote {tar} ({tar.stat().st_size / 2**20:.1f} MiB)")
+
+
+def render_report(bundle, out_dir):
+    """Tables, plot and summary.json from an audit bundle directory only."""
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
-    sel = json.loads((run_dir / "selection.json").read_text())["chosen"]
-    tr = json.loads((run_dir / "test_run.json").read_text())
-    names = [c[0] for c in tr["configs"]]
-    names = [n for n in names if not n.startswith("evals_")]
-    res = load_runs(DATA / f"runs{SUB}" / "test", names, PASSES)
-    ev_dir = DATA / f"runs{SUB}" / "test_evals"
-    if not (ev_dir / "evals_ef10.stats").exists() and DS == "sift":
-        ev_dir = DATA / "runs" / "test"  # the SIFT run timed these in the same pass
-        res.update(load_runs(ev_dir, [f"evals_ef{ef}" for ef in FIXED_EF], PASSES))
-    else:
-        res.update(load_runs(ev_dir, [f"evals_ef{ef}" for ef in FIXED_EF], 0))
-    gt_ids, gt_d = read_gt("test")
-    base, Qt = read_fbin(fbin("base")), read_fbin(fbin("test"))
+    bundle, out_dir = pathlib.Path(bundle), pathlib.Path(out_dir)
+    meta = read_json(bundle / "meta.json")
+    if meta["format"] != BUNDLE_FORMAT:
+        raise StudyError(f"unsupported bundle format {meta['format']}")
+    a = np.load(bundle / "arrays.npz")
+    sel, targets = meta["selection"], meta["targets"]
+    gt_ids, gt_d = a["gt_ids"], a["gt_dists"]
 
     rows, per_query = {}, {}
-    for n in names:
-        if n.startswith("evals_"):
-            continue
-        r = res[n]
-        rec, tie = recall_rows(r["ids"], gt_ids, gt_d, base, Qt)
-        lat_us = r["lat"] / 1e3
-        st = res[n.replace("fixed_", "evals_")]["stats"] if n.startswith("fixed_") else r["stats"]
+    for n in meta["configs"]:
+        rec, tie = recall_from(a[f"{n}__ids"], a[f"{n}__dists"], gt_ids, gt_d)
+        lat_us = a[f"{n}__lat_ns"] / 1e3
+        st = a[f"{n.replace('fixed_', 'evals_')}__stats"] if n.startswith("fixed_") else a[f"{n}__stats"]
         per_pass_mean = lat_us.mean(1)
         rows[n] = {
             "recall": rec.mean(), "recall_tie": tie.mean(),
@@ -492,48 +797,31 @@ def stage_report(run_dir):
             "evals": float(st["evals"].mean()), "expansions": float(st["exp"].mean()),
             "model_used_frac": float(st["model_used"].mean()),
         }
-        per_query[n] = {"recall": rec.astype(np.float32), "lat_us_median": np.median(lat_us, 0).astype(np.float32),
-                        "evals": st["evals"]}
-    np.savez_compressed(run_dir / "per_query_test.npz",
+        per_query[n] = {"recall": rec.astype(np.float32),
+                        "lat_us_median": np.median(lat_us, 0).astype(np.float32), "evals": st["evals"]}
+    np.savez_compressed(out_dir / "per_query_test.npz",
                         **{f"{n}__{k}": v for n, d in per_query.items() for k, v in d.items()})
 
-    # Oracle (diagnostic): greedy per-query stopping on the chosen learned ef_max trace.
     oracle = {}
-    for r in TARGETS:
-        s = sel.get(f"learned@{r}")
-        if s:
-            t = read_trace(trace_path("test", s["ef_max"], s["checkpoint"]))
-            rec, ev = greedy_oracle(entry_evals(t, gt_ids), r)
-            oracle[str(r)] = {"ef_max": s["ef_max"], "recall": rec, "evals": ev}
+    for r, o in meta["oracle"].items():
+        rec, ev = greedy_oracle(a[f"oracle_{r}__entry"], float(r))
+        oracle[r] = {"ef_max": o["ef_max"], "recall": rec, "evals": ev}
 
-    # Matched-quality table: each method's setting was chosen on val for the target.
     table = []
-    for r in TARGETS:
+    for r in targets:
         for method in ["fixed", "cap", "patience", "learned"]:
             s = sel.get(f"{method}@{r}")
-            if not s:
-                continue
-            n = s["name"] if method == "fixed" else f"{method}_{r}"
-            table.append({"target": r, "method": method, "config": n, **rows[n]})
+            if s:
+                n = s["name"] if method == "fixed" else f"{method}_{r}"
+                table.append({"target": r, "method": method, "config": n, **rows[n]})
 
-    # Model inference cost (C++ microbenchmark) for each chosen learned model.
-    overhead = {}
-    for r in TARGETS:
-        s = sel.get(f"learned@{r}")
-        if s:
-            t = read_trace(trace_path("val", s["ef_max"], s["checkpoint"]))
-            fpath = DATA / "val_features.f32"
-            X = t["features"][t["valid"]]
-            if s["use_query"]:
-                X = np.hstack([X, model_queries("val")[t["valid"]]])
-            X.astype(np.float32).tofile(fpath)
-            out = subprocess.run([TOOL, "overhead", str(run_dir / "models" / f"{s['model']}.txt"),
-                                  str(fpath), "20"], capture_output=True, text=True, check=True)
-            overhead[s["model"]] = json.loads(out.stdout)
-
-    summary = {"rows": rows, "matched": table, "oracle": oracle, "model_overhead": overhead,
-               "selection": sel, "environment": environment(run_dir)}
-    (run_dir / "summary.json").write_text(json.dumps(summary, indent=1, default=float))
+    summary = {"rows": rows, "matched": table, "oracle": oracle, "model_overhead": meta["model_overhead"],
+               "selection": sel, "measurement_environment": meta["measurement_environment"],
+               "bundle": {"run_id": meta["run_id"], "meta_sha256": sha256(bundle / "meta.json"),
+                          "arrays_sha256": sha256(bundle / "arrays.npz")},
+               "report_environment": {"generated": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+                                      "python": platform.python_version(), "numpy": np.__version__}}
+    write_json(out_dir / "summary.json", summary)
 
     lines = ["| target (val) | method | config | test R@10 | tie-aware | mean µs | p50 | p95 | p99 | QPS 1-thr | layer-0 evals | R@10<0.8 |",
              "|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|"]
@@ -542,7 +830,7 @@ def stage_report(run_dir):
                      f"{t['mean_us']:.1f} ({t['mean_us_min']:.1f}–{t['mean_us_max']:.1f}) | {t['p50_us']:.1f} | "
                      f"{t['p95_us']:.1f} | {t['p99_us']:.1f} | {t['qps_1thread']:.0f} | {t['evals']:.0f} | "
                      f"{t['frac_recall_below_0.8']:.3f} |")
-    (run_dir / "table.md").write_text("\n".join(lines) + "\n")
+    (out_dir / "table.md").write_text("\n".join(lines) + "\n")
 
     fig, axes = plt.subplots(1, 2, figsize=(11, 4.2))
     fx = sorted([(rows[n]["recall"], rows[n]["mean_us"], rows[n]["evals"]) for n in rows if n.startswith("fixed_")])
@@ -556,25 +844,35 @@ def stage_report(run_dir):
         if key == 2 and oracle:
             ax.scatter([o["recall"] for o in oracle.values()], [o["evals"] for o in oracle.values()],
                        marker="x", color="k", label="oracle (not deployable)")
+            ax.legend(fontsize=8)
         ax.set_xlabel("recall@10 (test)"); ax.set_ylabel(lab); ax.set_yscale("log")
-        ax.set_xlim(min(TARGETS) - 0.05, 1.0); ax.grid(alpha=0.3)
+        ax.set_xlim(min(targets) - 0.05, 1.0); ax.grid(alpha=0.3)
     axes[0].legend(fontsize=8)
-    fig.suptitle(f"{'SIFT1M' if DS == 'sift' else 'GloVe-100'}, M=16, efc=200: test queries, "
+    fig.suptitle(f"{'SIFT1M' if meta['dataset'] == 'sift' else 'GloVe-100'}, M=16, efc=200: test queries, "
                  "settings chosen on validation")
     fig.tight_layout()
-    fig.savefig(run_dir / "recall_latency.png", dpi=130)
+    fig.savefig(out_dir / "recall_latency.png", dpi=130)
     print("\n".join(lines))
+
+
+def stage_report(run_dir):
+    """Regenerates the report from the audit bundle: $BUNDLE if set (e.g. a downloaded copy),
+    else this run's bundle under $VECSEARCH_DATA. Needs no index, traces or raw run outputs."""
+    bundle = pathlib.Path(os.environ.get("BUNDLE", bundle_dir(run_dir)))
+    render_report(bundle, run_dir)
 
 
 def stage_stress(run_dir):
     """Predefined stress condition: the same policies on a rebuilt index (graph seed 101), no
     retraining or recalibration. Recall and distance evaluations from traces (exact, as checked
     on val); no timing."""
+    pin_inputs(run_dir)
+    refuse_overwrite(run_dir / "stress.json")
     log = run_dir / "stress.log"
-    idx = DATA / "sift_m16_efc200_s101.hnsw"
+    idx = DATA / f"{DS}_m16_efc200_s101.hnsw"
     if not idx.exists():
-        sh([TOOL, "build", str(fbin("base")), str(idx), "16", "200", "101"], log)
-    sel = json.loads((run_dir / "selection.json").read_text())["chosen"]
+        sh([TOOL, "build", str(fbin("base")), str(idx), "16", "200", "101", METRIC], log)
+    sel = read_json(run_dir / "selection.json")["chosen"]
     gt_ids, _ = read_gt("test")
     Qt = model_queries("test")
     out = {"index_sha256": sha256(idx)}
@@ -582,77 +880,110 @@ def stage_stress(run_dir):
         for method in ["learned", "cap"]:
             s = sel.get(f"{method}@{r}")
             c = s.get("checkpoint", CHECKPOINTS[0])
-            p = DATA / "traces" / f"stress_test_ef{s['ef_max']}_c{c}.trace"
-            if not p.exists():
-                sh([TOOL, "trace", str(idx), str(fbin("test")), str(s["ef_max"]), str(c), str(p)], log)
-            t = read_trace(p)
+            name = f"stress_s101/{tname('test', s['ef_max'], c)}"
+            record_trace(run_dir, name, ensure_trace(idx, fbin("test"), s["ef_max"], c, log))
+            t = load_trace(run_dir, name)
             e, tot = entry_evals(t, gt_ids), t["evals"].astype(float)
             if method == "cap":
                 budget = np.full(len(tot), s["max_evals"])
             else:
-                text = (run_dir / "models" / f"{s['model']}.txt").read_text().split()
-                m = parse_model(text)
+                m = parse_model((run_dir / "models" / f"{s['model']}.txt").read_text().split())
                 pv = np.where(t["valid"], predict(m, t["features"], Qt if s["use_query"] else None), 0)
                 budget = learned_budget(pv, t["valid"], tot, c, s["multiplier"])
             rec, ev = simulate(e, tot, budget)
             out[f"{method}@{r}"] = {"recall": rec.mean(), "evals": ev.mean()}
-    (run_dir / "stress.json").write_text(json.dumps(out, indent=1, default=float))
+    write_json(run_dir / "stress.json", out)
     print(json.dumps(out, indent=1, default=float))
 
 
 def stage_mt(run_dir):
     """Representative multithreaded throughput for the matched configs: all test queries in one
-    batch call, 16 threads (all logical CPUs), best of 5. Untimed elsewhere; same machine."""
-    sel = json.loads((run_dir / "selection.json").read_text())["chosen"]
-    tr = json.loads((run_dir / "test_run.json").read_text())
+    batch call, 16 threads (all logical CPUs), best of 5."""
+    pin_inputs(run_dir)
+    refuse_overwrite(run_dir / "multithread.json")
+    sel = read_json(run_dir / "selection.json")["chosen"]
+    tr = read_json(run_dir / "test_run.json")
     want = {sel[k]["name"] if k.startswith("fixed") else k.replace("@", "_") for k in sel}
     configs = [c for c in tr["configs"] if c[0] in want]
-    cfg = DATA / f"runs{SUB}" / "mt_configs.txt"
+    verify_models(run_dir, [pathlib.Path(c[5]).name for c in configs if c[5] != "-"])
+    raw = runs_dir(run_dir) / "mt"
+    raw.mkdir(parents=True)
+    cfg = raw / "configs.txt"
     cfg.write_text("".join(" ".join(str(x) for x in c) + "\n" for c in configs))
-    threads = os.cpu_count()
-    out = sh([TOOL, "batch", str(INDEX), str(fbin("test")), str(cfg), "5", str(threads)],
+    env = environment()
+    out = sh([TOOL, "batch", str(INDEX), str(fbin("test")), str(cfg), "5", str(os.cpu_count())],
              run_dir / "mt.log")
     rows = [json.loads(line) for line in out.splitlines() if line.startswith("{")]
-    (run_dir / "multithread.json").write_text(json.dumps(rows, indent=1))
+    write_json(run_dir / "multithread.json", rows)
+    write_json(run_dir / "multithread_env.json", env)
     for r in rows:
         print(f"{r['name']:>16}  {r['qps']:>10.0f} QPS ({r['threads']} threads)")
 
 
-def parse_model(tok):
-    i = tok.index("bias")
-    kind = tok[tok.index("kind") + 1]
-    m = {"kind": kind, "bias": float(tok[i + 1])}
-    if kind == "linear":
-        n = int(tok[i + 3])
-        m["weights"] = [float(x) for x in tok[i + 4:i + 4 + n]]
-        return m
-    j, trees = i + 4, []
-    for _ in range(int(tok[i + 3])):
-        n = int(tok[j + 1]); j += 2
-        trees.append([(int(tok[j + 5 * a]), float(tok[j + 5 * a + 1]), int(tok[j + 5 * a + 2]),
-                       int(tok[j + 5 * a + 3]), float(tok[j + 5 * a + 4])) for a in range(n)])
-        j += 5 * n
-    m["trees"] = trees
-    return m
+def stage_adopt(run_dir):
+    """One-off for runs made before run isolation (sift1m_v1, glove_v1). Nothing is retrained or
+    re-measured. It (1) pins the input hashes after checking them against the ones recorded at
+    preparation; (2) regenerates every trace the run used through the fingerprinted cache and
+    requires it to be byte-identical to the original file, then records it; (3) records model
+    hashes; (4) moves the run's raw outputs into its own runs_by_id directory."""
+    name = pathlib.Path(run_dir).name
+    legacy_traces = DATA / ("traces" if DS == "sift" else f"traces_{DS}")
+    legacy_runs = DATA / ("runs" if DS == "sift" else f"runs_{DS}")
+    prep = [json.loads(l) for l in (run_dir / "prepare.log").read_text().splitlines() if l.startswith('{"snapshot"')]
+    manifest = read_json(run_dir / "split_manifest.json")["outputs_sha256"]
+    cur = current_inputs()
+    if prep[-1]["sha256"] != cur["index"][INDEX.name]:
+        raise StudyError("index differs from the snapshot recorded at preparation")
+    for s, h in cur["fbin"].items():
+        if manifest[f"{DS}_{s}.fbin"] != h:
+            raise StudyError(f"{s}.fbin differs from the split manifest")
+    pin_inputs(run_dir, note="Pinned after the run by `adopt`; index and fbin hashes verified "
+                             "against prepare.log and split_manifest.json. GT hashes recorded here.")
+    log = run_dir / "adopt.log"
+    report = {"identical": [], "missing_legacy": []}
+    jobs = [(INDEX, s, ef, c, tname(s, ef, c), legacy_traces / f"{s}_ef{ef}_c{c}.trace")
+            for s in ["learn", "val", "test"] for ef in EF_MAX for c in CHECKPOINTS]
+    if DS == "sift" and (run_dir / "stress.json").exists():
+        idx2 = DATA / "sift_m16_efc200_s101.hnsw"
+        if sha256(idx2) != read_json(run_dir / "stress.json")["index_sha256"]:
+            raise StudyError("stress index differs from the one stress.json recorded")
+        sel = read_json(run_dir / "selection.json")["chosen"]
+        for r in TARGETS:
+            for method in ["learned", "cap"]:
+                s = sel[f"{method}@{r}"]
+                c = s.get("checkpoint", CHECKPOINTS[0])
+                jobs.append((idx2, "test", s["ef_max"], c, f"stress_s101/{tname('test', s['ef_max'], c)}",
+                             legacy_traces / f"stress_test_ef{s['ef_max']}_c{c}.trace"))
+    for index, split, ef, c, nm, legacy in jobs:
+        key = ensure_trace(index, fbin(split), ef, c, log)
+        if not legacy.exists():
+            report["missing_legacy"].append(nm)
+            continue
+        if sha256(cache_paths(key)[0]) != sha256(legacy):
+            raise StudyError(f"regenerated trace {nm} differs from the original {legacy}")
+        record_trace(run_dir, nm, key)
+        report["identical"].append(nm)
+    if report["missing_legacy"]:
+        raise StudyError(f"original traces missing: {report['missing_legacy']}")
+    if not (run_dir / "models.sha256.json").exists():
+        write_json(run_dir / "models.sha256.json", model_hashes(run_dir))
+    dest = runs_dir(run_dir)
+    if not dest.exists():
+        dest.mkdir(parents=True)
+        for stage in sorted(p for p in legacy_runs.iterdir() if p.is_dir()):
+            shutil.move(str(stage), str(dest / stage.name))
+    report["raw_dir"] = str(dest)
+    write_json(run_dir / "adopt.json", report)
+    print(json.dumps({k: (len(v) if isinstance(v, list) else v) for k, v in report.items()}))
 
 
-def environment(run_dir):
-    def cmd(c):
-        try:
-            return subprocess.run(c, capture_output=True, text=True, shell=True).stdout.strip()
-        except Exception as e:  # noqa: BLE001
-            return str(e)
-    import sklearn
-    return {"cpu": cmd("grep -m1 'model name' /proc/cpuinfo | cut -d: -f2"),
-            "nproc": os.cpu_count(), "kernel": platform.platform(),
-            "compiler": cmd("g++ --version | head -1"), "build": "CMake preset 'bench' (Release, -O3), AVX2 kernels",
-            "python": platform.python_version(), "numpy": np.__version__, "sklearn": sklearn.__version__,
-            "git_commit": cmd("git rev-parse HEAD"), "git_dirty": cmd("git status --porcelain | wc -l"),
-            "index_sha256": sha256(INDEX)}
-
+STAGES = {"traces": stage_traces, "select": stage_select, "test": stage_test, "bundle": stage_bundle,
+          "report": stage_report, "stress": stage_stress, "mt": stage_mt, "adopt": stage_adopt}
 
 if __name__ == "__main__":
     stage, run_dir = sys.argv[1], pathlib.Path(sys.argv[2])
     run_dir.mkdir(parents=True, exist_ok=True)
-    {"traces": stage_traces, "select": stage_select, "test": stage_test, "report": stage_report,
-     "stress": stage_stress, "mt": stage_mt}[stage](run_dir)
+    try:
+        STAGES[stage](run_dir)
+    except StudyError as e:
+        sys.exit(f"error: {e}")

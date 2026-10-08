@@ -2,13 +2,29 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <filesystem>
 #include <random>
 #include <set>
+#include <string>
 #include <vector>
+
+#include <gtest/gtest.h>
+#include <unistd.h>
 
 #include "vecsearch/search_result.hpp"
 
 namespace vecsearch::test {
+
+// A temporary file path unique to this process and test, so `ctest -j` can run tests in
+// parallel without two of them writing the same file.
+inline std::string unique_temp_path(const std::string& name) {
+  const auto* info = ::testing::UnitTest::GetInstance()->current_test_info();
+  std::string tag = std::to_string(::getpid());
+  if (info) tag += std::string("_") + info->test_suite_name() + "_" + info->name();
+  for (char& c : tag)
+    if (c == '/') c = '_';
+  return (std::filesystem::temp_directory_path() / (tag + "_" + name)).string();
+}
 
 inline std::vector<float> random_vectors(std::size_t n, std::size_t dim, std::uint32_t seed) {
   std::mt19937 rng(seed);

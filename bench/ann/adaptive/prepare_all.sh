@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Data preparation for the adaptive-search study, in the dev container:
+# Data preparation for the adaptive-search study, in the dev container (downloads the
+# ann-benchmarks HDF5 and the TEXMEX archive if missing, verifying both against sources.json):
 #   tools/dev.sh "bench/ann/adaptive/prepare_all.sh bench/ann/results/adaptive_search/sift1m_v1"
 # Splits, the fixed index snapshot (1 thread, seed 100), a build-determinism check, and exact
 # top-10 ground truth for learn / val / test. Logs JSON lines to <run_dir>/prepare.log.
@@ -8,8 +9,14 @@ RUN=$1
 D=${VECSEARCH_DATA:-/data}/adaptive
 TOOL=build/bench/bench/ann/adaptive_eval
 mkdir -p "$RUN"
+# Never overwrite a prepared data root: indexes, splits and ground truth are pinned by hash in
+# each run's inputs.json. Reproduce into a fresh VECSEARCH_DATA instead.
+for f in "$D/sift_base.fbin" "$D/sift_m16_efc200_s100.hnsw"; do
+  if [ -e "$f" ]; then echo "$f exists: use a fresh VECSEARCH_DATA" >&2; exit 1; fi
+done
 cmake --preset bench >/dev/null && cmake --build --preset bench --target adaptive_eval >/dev/null
 LOG=$RUN/prepare.log
+[ -f "${VECSEARCH_DATA:-/data}/texmex/sift/sift_learn.fvecs" ] || bench/ann/adaptive/fetch_texmex.sh
 : >"$LOG"
 
 python3 bench/ann/adaptive/prepare.py "$RUN" | tee -a "$LOG"
@@ -30,9 +37,9 @@ echo "{\"determinism_100k\": \"$([ "$a" = "$b" ] && echo identical || echo DIFFE
 rm -f "$D/det_a.hnsw" "$D/det_b.hnsw" "$D/sift_base100k.fbin"
 
 # The snapshot every policy is compared on.
-$TOOL build "$D/sift_base.fbin" "$D/sift_m16_efc200_s100.hnsw" 16 200 100 | tee -a "$LOG"
+$TOOL build "$D/sift_base.fbin" "$D/sift_m16_efc200_s100.hnsw" 16 200 100 l2 | tee -a "$LOG"
 echo "{\"snapshot\": \"sift_m16_efc200_s100.hnsw\", \"sha256\": \"$(sha256sum "$D/sift_m16_efc200_s100.hnsw" | cut -d' ' -f1)\"}" | tee -a "$LOG"
 
 for s in learn val test; do
-  $TOOL gt "$D/sift_base.fbin" "$D/sift_$s.fbin" 10 "$D/sift_$s.gt" | sed "s/^{/{\"split\": \"$s\", /" | tee -a "$LOG"
+  $TOOL gt "$D/sift_base.fbin" "$D/sift_$s.fbin" 10 "$D/sift_$s.gt" l2 | sed "s/^{/{\"split\": \"$s\", /" | tee -a "$LOG"
 done

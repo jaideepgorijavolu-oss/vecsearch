@@ -37,7 +37,7 @@ struct AdaptiveParams {
   std::size_t ef = 0;         // beam width (0 = ef_search()); at least k
   std::size_t max_evals = 0;  // fixed budget of layer-0 distance evaluations (0 = none)
   std::size_t patience = 0;   // expansions without a top-k change before stopping (0 = off)
-  const TerminationModel* model = nullptr;  // learned budget (no deleted nodes only)
+  const TerminationModel* model = nullptr;  // learned budget (ignored with deleted nodes)
   double multiplier = 1.0;                  // scales the model's predicted budget
   std::size_t checkpoint = 0;  // without a model: record features at this many evaluations
 };
@@ -50,7 +50,7 @@ struct AdaptiveStats {
   std::uint32_t budget = 0;      // the evaluation budget in force at the end (0 = none)
   StopReason stop = StopReason::Converged;
   bool features_valid = false;  // features were computed at the checkpoint and are finite
-  bool model_used = false;      // a model prediction set the budget (false = plain ef search)
+  bool model_used = false;      // a model prediction set the budget (see the fallback rule)
   float features[kNumTerminationFeatures] = {};
 };
 
@@ -85,10 +85,12 @@ class HnswIndex {
                       std::size_t num_threads = 0, const std::int64_t* allowed_labels = nullptr,
                       std::size_t num_allowed = 0) const;
 
-  // Experimental search with early termination (see AdaptiveParams). Unfiltered only. With a
-  // model, an index with deleted nodes or a query whose features are not finite falls back to the
-  // plain ef search (model_used = false). `stats` (nq entries) and `events` (resized to nq) are
-  // optional outputs. With no budget, patience or model, results equal search(queries, k, ef).
+  // Experimental search with early termination (see AdaptiveParams). Unfiltered only.
+  // Model fallback: on an index with deleted nodes, or for a query whose features are not finite,
+  // the model is ignored (model_used = false). Only the model is dropped: an explicit max_evals
+  // or patience still applies, since those are caller-set limits. With neither set, the fallback
+  // is exactly the plain ef search. `stats` (nq entries) and `events` (resized to nq) are optional
+  // outputs. With no budget, patience or model, results equal search(queries, k, ef).
   SearchResult search_adaptive(const float* queries, std::size_t nq, std::size_t k,
                                const AdaptiveParams& params, AdaptiveStats* stats = nullptr,
                                std::vector<std::vector<TopkEvent>>* events = nullptr,

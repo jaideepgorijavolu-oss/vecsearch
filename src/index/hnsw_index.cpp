@@ -379,7 +379,7 @@ void HnswIndex::search_layer_adaptive(const float* q, std::uint32_t ep, std::siz
         st.features_valid =
             std::all_of(f, f + kNumTerminationFeatures, [](float x) { return std::isfinite(x); });
       }
-      // Invalid features (e.g. a zero distance) fall back to the plain ef search.
+      // Invalid features (e.g. a zero distance): ignore the model; explicit limits still apply.
       if (st.features_valid && model) {
         const double predicted = p.multiplier * std::exp(model->predict_log_evals(st.features, q));
         if (predicted >= 0) {  // false for NaN
@@ -589,7 +589,8 @@ SearchResult HnswIndex::search_adaptive(const float* queries, std::size_t nq, st
   if (k == 0 || nq == 0 || max_level_ < 0) return result;
   AdaptiveParams p = params;
   p.ef = std::max(p.ef == 0 ? ef_search() : p.ef, k);
-  // The model was trained on static, unfiltered indexes: with deleted nodes, use plain ef.
+  // The model was trained on static, unfiltered indexes: with deleted nodes, ignore it (explicit
+  // max_evals / patience still apply).
   const TerminationModel* model = num_deleted_ == 0 ? p.model : nullptr;
 
   const std::size_t threads = std::min(resolve_threads(num_threads), nq);

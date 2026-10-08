@@ -6,6 +6,11 @@ RUN=$1
 D=${VECSEARCH_DATA:-/data}/adaptive
 TOOL=build/bench/bench/ann/adaptive_eval
 mkdir -p "$RUN"
+# Never overwrite a prepared data root: indexes, splits and ground truth are pinned by hash in
+# each run's inputs.json. Reproduce into a fresh VECSEARCH_DATA instead.
+for f in "$D/glove_base.fbin" "$D/glove_m16_efc200_s100.hnsw"; do
+  if [ -e "$f" ]; then echo "$f exists: use a fresh VECSEARCH_DATA" >&2; exit 1; fi
+done
 cmake --preset bench >/dev/null && cmake --build --preset bench --target adaptive_eval >/dev/null
 LOG=$RUN/prepare.log
 : >"$LOG"

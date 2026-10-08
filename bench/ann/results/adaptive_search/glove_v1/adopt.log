@@ -1,0 +1,54 @@
+{"cmd": ["/work/build/bench/bench/ann/adaptive_eval", "trace", "/data/adaptive/glove_m16_efc200_s100.hnsw", "/data/adaptive/glove_learn.fbin", "512", "250", "/data/adaptive/trace_cache/1f24e4d3d8043717984e8c82d70b07d4.part"], "rc": 0, "seconds": 21.124375104904175}
+trace: 18.64 s
+{"cmd": ["/work/build/bench/bench/ann/adaptive_eval", "trace", "/data/adaptive/glove_m16_efc200_s100.hnsw", "/data/adaptive/glove_learn.fbin", "512", "500", "/data/adaptive/trace_cache/fe128f0e7fa540286c18ac7303333589.part"], "rc": 0, "seconds": 19.733187198638916}
+trace: 18.41 s
+{"cmd": ["/work/build/bench/bench/ann/adaptive_eval", "trace", "/data/adaptive/glove_m16_efc200_s100.hnsw", "/data/adaptive/glove_learn.fbin", "512", "1000", "/data/adaptive/trace_cache/87a0e63fc224cb160f470d50538b5b1c.part"], "rc": 0, "seconds": 20.745333909988403}
+trace: 19.73 s
+{"cmd": ["/work/build/bench/bench/ann/adaptive_eval", "trace", "/data/adaptive/glove_m16_efc200_s100.hnsw", "/data/adaptive/glove_learn.fbin", "1024", "250", "/data/adaptive/trace_cache/01c28a3c96b7b9ae20b24d78b07d4f13.part"], "rc": 0, "seconds": 34.652225494384766}
+trace: 33.57 s
+{"cmd": ["/work/build/bench/bench/ann/adaptive_eval", "trace", "/data/adaptive/glove_m16_efc200_s100.hnsw", "/data/adaptive/glove_learn.fbin", "1024", "500", "/data/adaptive/trace_cache/760abb6de45ba52657cc8208250febe0.part"], "rc": 0, "seconds": 34.30134439468384}
+trace: 33.13 s
+{"cmd": ["/work/build/bench/bench/ann/adaptive_eval", "trace", "/data/adaptive/glove_m16_efc200_s100.hnsw", "/data/adaptive/glove_learn.fbin", "1024", "1000", "/data/adaptive/trace_cache/151d76334bbdb26c704c59c2a6a7c5d2.part"], "rc": 0, "seconds": 34.29345393180847}
+trace: 33.15 s
+{"cmd": ["/work/build/bench/bench/ann/adaptive_eval", "trace", "/data/adaptive/glove_m16_efc200_s100.hnsw", "/data/adaptive/glove_learn.fbin", "2048", "250", "/data/adaptive/trace_cache/fb6821e36e23f6e39f5b937c14f1b510.part"], "rc": 0, "seconds": 67.17070627212524}
+trace: 66.17 s
+{"cmd": ["/work/build/bench/bench/ann/adaptive_eval", "trace", "/data/adaptive/glove_m16_efc200_s100.hnsw", "/data/adaptive/glove_learn.fbin", "2048", "500", "/data/adaptive/trace_cache/508863d13722ff3c92ec2f1974a9a97b.part"], "rc": 0, "seconds": 65.38658857345581}
+trace: 64.52 s
+{"cmd": ["/work/build/bench/bench/ann/adaptive_eval", "trace", "/data/adaptive/glove_m16_efc200_s100.hnsw", "/data/adaptive/glove_learn.fbin", "2048", "1000", "/data/adaptive/trace_cache/cfec1071a59e9a2050aae7d3f679a7ed.part"], "rc": 0, "seconds": 65.60502123832703}
+trace: 64.70 s
+{"cmd": ["/work/build/bench/bench/ann/adaptive_eval", "trace", "/data/adaptive/glove_m16_efc200_s100.hnsw", "/data/adaptive/glove_val.fbin", "512", "250", "/data/adaptive/trace_cache/67f7417daca9a83a3764c960220a062e.part"], "rc": 0, "seconds": 1.4512906074523926}
+trace: 0.90 s
+{"cmd": ["/work/build/bench/bench/ann/adaptive_eval", "trace", "/data/adaptive/glove_m16_efc200_s100.hnsw", "/data/adaptive/glove_val.fbin", "512", "500", "/data/adaptive/trace_cache/cc4e53eb625e5beebe349cf4bbf3127e.part"], "rc": 0, "seconds": 1.521272897720337}
+trace: 0.99 s
+{"cmd": ["/work/build/bench/bench/ann/adaptive_eval", "trace", "/data/adaptive/glove_m16_efc200_s100.hnsw", "/data/adaptive/glove_val.fbin", "512", "1000", "/data/adaptive/trace_cache/c177676093aa7a3bf05093cd9022064a.part"], "rc": 0, "seconds": 1.4380762577056885}
+trace: 0.91 s
+{"cmd": ["/work/build/bench/bench/ann/adaptive_eval", "trace", "/data/adaptive/glove_m16_efc200_s100.hnsw", "/data/adaptive/glove_val.fbin", "1024", "250", "/data/adaptive/trace_cache/45c4d87705d844526cf90a028ff116ab.part"], "rc": 0, "seconds": 2.2368693351745605}
+trace: 1.71 s
+{"cmd": ["/work/build/bench/bench/ann/adaptive_eval", "trace", "/data/adaptive/glove_m16_efc200_s100.hnsw", "/data/adaptive/glove_val.fbin", "1024", "500", "/data/adaptive/trace_cache/d64b201ab75b75ba440bcdd338015df8.part"], "rc": 0, "seconds": 2.1995718479156494}
+trace: 1.68 s
+{"cmd": ["/work/build/bench/bench/ann/adaptive_eval", "trace", "/data/adaptive/glove_m16_efc200_s100.hnsw", "/data/adaptive/glove_val.fbin", "1024", "1000", "/data/adaptive/trace_cache/222516d43246c6da3af0130256a838fe.part"], "rc": 0, "seconds": 2.1998116970062256}
+trace: 1.67 s
+{"cmd": ["/work/build/bench/bench/ann/adaptive_eval", "trace", "/data/adaptive/glove_m16_efc200_s100.hnsw", "/data/adaptive/glove_val.fbin", "2048", "250", "/data/adaptive/trace_cache/0199e39739806c3ada19bc41a61e87ee.part"], "rc": 0, "seconds": 3.883070468902588}
+trace: 3.34 s
+{"cmd": ["/work/build/bench/bench/ann/adaptive_eval", "trace", "/data/adaptive/glove_m16_efc200_s100.hnsw", "/data/adaptive/glove_val.fbin", "2048", "500", "/data/adaptive/trace_cache/eb5e2feafcb79ed1a60b4f252da27603.part"], "rc": 0, "seconds": 3.689638137817383}
+trace: 3.17 s
+{"cmd": ["/work/build/bench/bench/ann/adaptive_eval", "trace", "/data/adaptive/glove_m16_efc200_s100.hnsw", "/data/adaptive/glove_val.fbin", "2048", "1000", "/data/adaptive/trace_cache/259c66ec23c2299b33b3df287c1eafbd.part"], "rc": 0, "seconds": 3.6821064949035645}
+trace: 3.16 s
+{"cmd": ["/work/build/bench/bench/ann/adaptive_eval", "trace", "/data/adaptive/glove_m16_efc200_s100.hnsw", "/data/adaptive/glove_test.fbin", "512", "250", "/data/adaptive/trace_cache/911763b89b77ea02190e47de9c2682df.part"], "rc": 0, "seconds": 1.4518473148345947}
+trace: 0.93 s
+{"cmd": ["/work/build/bench/bench/ann/adaptive_eval", "trace", "/data/adaptive/glove_m16_efc200_s100.hnsw", "/data/adaptive/glove_test.fbin", "512", "500", "/data/adaptive/trace_cache/84aeb29af84b09b729133ca11ab6f4c4.part"], "rc": 0, "seconds": 1.4258337020874023}
+trace: 0.90 s
+{"cmd": ["/work/build/bench/bench/ann/adaptive_eval", "trace", "/data/adaptive/glove_m16_efc200_s100.hnsw", "/data/adaptive/glove_test.fbin", "512", "1000", "/data/adaptive/trace_cache/b8f3340fc8b0a74a2b266472ccafe29c.part"], "rc": 0, "seconds": 1.4442553520202637}
+trace: 0.90 s
+{"cmd": ["/work/build/bench/bench/ann/adaptive_eval", "trace", "/data/adaptive/glove_m16_efc200_s100.hnsw", "/data/adaptive/glove_test.fbin", "1024", "250", "/data/adaptive/trace_cache/e0244a5989387aba97ff34f629c7a263.part"], "rc": 0, "seconds": 2.2381837368011475}
+trace: 1.70 s
+{"cmd": ["/work/build/bench/bench/ann/adaptive_eval", "trace", "/data/adaptive/glove_m16_efc200_s100.hnsw", "/data/adaptive/glove_test.fbin", "1024", "500", "/data/adaptive/trace_cache/a94e0b841db170bbdb3a9792ca2ce5e5.part"], "rc": 0, "seconds": 2.1998062133789062}
+trace: 1.67 s
+{"cmd": ["/work/build/bench/bench/ann/adaptive_eval", "trace", "/data/adaptive/glove_m16_efc200_s100.hnsw", "/data/adaptive/glove_test.fbin", "1024", "1000", "/data/adaptive/trace_cache/e2e82b4a067954adb5521b054a1962c4.part"], "rc": 0, "seconds": 2.3584704399108887}
+trace: 1.78 s
+{"cmd": ["/work/build/bench/bench/ann/adaptive_eval", "trace", "/data/adaptive/glove_m16_efc200_s100.hnsw", "/data/adaptive/glove_test.fbin", "2048", "250", "/data/adaptive/trace_cache/c2d45ac146e7537d6ab40a84515d4b53.part"], "rc": 0, "seconds": 3.9844417572021484}
+trace: 3.45 s
+{"cmd": ["/work/build/bench/bench/ann/adaptive_eval", "trace", "/data/adaptive/glove_m16_efc200_s100.hnsw", "/data/adaptive/glove_test.fbin", "2048", "500", "/data/adaptive/trace_cache/827cf71865e7b593713ebf56bc01d70d.part"], "rc": 0, "seconds": 4.256442546844482}
+trace: 3.69 s
+{"cmd": ["/work/build/bench/bench/ann/adaptive_eval", "trace", "/data/adaptive/glove_m16_efc200_s100.hnsw", "/data/adaptive/glove_test.fbin", "2048", "1000", "/data/adaptive/trace_cache/6e1b20734cb404f2e9da58c53b90483f.part"], "rc": 0, "seconds": 3.9619481563568115}
+trace: 3.43 s

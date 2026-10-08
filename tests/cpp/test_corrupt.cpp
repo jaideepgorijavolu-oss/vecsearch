@@ -31,7 +31,7 @@ constexpr std::size_t kEntryOff = 66;
 constexpr std::size_t kLabelsOff = 70;
 
 std::string temp_path(const std::string& name) {
-  return (std::filesystem::temp_directory_path() / name).string();
+  return vecsearch::test::unique_temp_path(name);
 }
 
 Bytes read_file(const std::string& path) {

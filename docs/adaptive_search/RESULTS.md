@@ -8,11 +8,14 @@ that predicts each query's distance-evaluation budget.
   tuned patience heuristic. The larger beam it needs makes each evaluation more expensive, and
   prediction adds overhead. A SIFT search takes only ~0.15 ms, so there is little to save. This
   negative result was anticipated in the protocol.
-- **GloVe-100: a real win at high recall.** At 0.9468 test recall the policy averages 1,114 µs
-  per query (single thread). Fixed ef 768 reaches only 0.9450 recall and takes 1,406 µs, so the
-  policy is **21% faster at higher recall**. On 16 threads the same comparison gives 5,617 vs
-  3,072 QPS for fixed ef 1024 (0.9566 recall). It also missed its 0.95 validation target on test
-  by 0.0032, and its p95/p99 latency is worse. At recall 0.80 it loses.
+- **GloVe-100: no win under the predeclared rule.** At the 0.95 target the policy reaches
+  0.9468 test recall, missing the target by 0.0032. The validation-selected baseline is fixed
+  ef 1024, at 0.9566. The gap is 0.0098, well outside the 0.002 matching allowance, so the
+  predeclared matched-quality criterion is not met at any target.
+- **GloVe-100, descriptive comparison:** on the measured test curve, the policy has **20.8%
+  lower mean latency than fixed ef 768**, the nearest measured fixed-ef point: 1,113.9 vs
+  1,406.2 µs, single thread, at recall 0.9468 vs 0.9450. Its p95/p99 latency is worse. At
+  recall 0.80 it is slower than fixed ef.
 
 [Results on GloVe-100](#glove-100) and [multithreaded throughput](#multithreaded-throughput-16-threads)
 are further down. Protocol and amendments: [PROTOCOL.md](PROTOCOL.md), committed before each
@@ -181,19 +184,23 @@ row. Nearby fixed-ef points from the same timed run:
 ![GloVe recall vs latency](../../bench/ann/results/adaptive_search/glove_v1/recall_latency.png)
 
 Against the predeclared rule (beat both fixed ef and patience by more than the pass spread,
-with recall within 0.002):
+with recall within 0.002 of theirs). The comparators are the settings validation selected:
 
-- **0.95: win.** Fixed ef 768 has *lower* recall (0.9450 < 0.9468) and is 26% slower (1,406 vs
-  1,114 µs mean); the pass ranges are far apart. Patience is infeasible. The win needs one
-  caveat: the policy missed its validation target on test by 0.0032, so the honest statement is
-  "faster at the recall it achieved", not "faster at 0.95".
-- **0.90: not a clean win under the rule.** The recall gap to fixed ef 320 is 0.0031 (> 0.002), and
+- **0.95: criterion not met.** The validation-selected fixed baseline is ef 1024, with test
+  recall 0.95658. The learned policy reaches 0.94678, a gap of 0.00980, far outside the 0.002
+  allowance. No patience setting reached 0.95 on validation, so there is no patience comparator.
+  The policy also missed its own 0.95 target by 0.0032. The policy was not retuned on test.
+  - *Descriptive comparison on the measured test curve*, not part of the rule: fixed ef 768 (a
+    sweep point, not the validation-selected comparator) reaches 0.94500 at 1,406.2 µs mean. The
+    learned policy's 1,113.9 µs is **20.8% lower**, at slightly higher recall (0.94678), and the
+    pass ranges do not overlap. Its tails are worse: p95/p99 2,448/2,667 µs vs 1,806/1,957.
+- **0.90: criterion not met.** The recall gap to fixed ef 320 is 0.0031 (> 0.002), and
   patience lands 0.0115 higher. Interpolating the fixed-ef curve between ef 256 and 320 gives
   ≈608 µs at 0.8955, about 10% slower than the learned policy's 548.5 µs. That is a reading of the
   curve, not a matched measurement.
 - **0.80: loss.** Fixed ef 96 is faster (225 vs 293 µs) at higher recall.
 
-Why GloVe and not SIFT: GloVe queries vary far more in difficulty, and an evaluation is a
+Why GloVe responds and SIFT does not: GloVe queries vary far more in difficulty, and an evaluation is a
 smaller share of the cost. Predicted budgets explain more of the variance (validation R² of
 log-budget 0.83 vs 0.66). At 0.95 the policy uses 45% fewer evaluations than fixed ef 1024 and
 29% fewer than ef 768, which outweighs the bigger-beam cost and the 4.8 µs prediction. The
@@ -225,29 +232,44 @@ claimed.
 
 ## Checks run
 
-- `ctest` (release): 68/68, including 12 new tests in `tests/cpp/test_adaptive.cpp`:
+- `ctest` (release): 69/69, also with `ctest -j16` (test temp files are now unique per test),
+  including 13 new tests in `tests/cpp/test_adaptive.cpp`:
   - `search_adaptive` with no termination gives byte-identical results to `search()` for all three metrics, with and without deletions
   - budget-prefix property
   - patience
   - feature edge cases and zero-distance fallback
-  - model ignored on indexes with deletions
+  - model ignored on indexes with deletions; explicit max_evals / patience still apply (fallback contract)
   - parallel == serial results
   - malformed model files rejected
-- ASan + UBSan preset: 68/68. TSan preset: 68/68 (Docker, ASLR off).
+- ASan + UBSan and TSan presets: 68/68 locally before the fallback-contract test was added;
+  CI runs both on every push. Service tests: 34/34.
 - `search()` code path unchanged: the new loop is a separate function. The regression check is
   the existing test suite. As a sanity check, fixed ef 64 on this snapshot gives 0.9645 on the
   5k test queries, against the legacy 0.9635 on all 10k with a different graph.
 - Python: wheel built and `pytest tests/python` 73/73 passed, README example ran (bindings
-  untouched; `search_adaptive` is C++ only). **Not run:** the service tests. Legacy benchmark files
-  were not regenerated and are not compared with these timings.
+  untouched; `search_adaptive` is C++ only). Legacy benchmark files were not regenerated and
+  are not compared with these timings.
+- Run isolation (`bench/ann/adaptive/test_study.py`, 6 tests on a tiny dataset with the real C++
+  tool; runs in CI):
+  - a rebuilt index is neither reused from the trace cache nor accepted by a pinned run;
+  - changed queries or code change the cache key;
+  - a damaged cache entry is rejected;
+  - two runs on one data root keep separate raw outputs;
+  - a changed model file is detected;
+  - a report reads only its own bundle and keeps the measurement environment.
 
 ## Limitations
 
 - One graph snapshot per dataset for timing; 5 timed passes (SIFT) or 3 (GloVe). Multithread
   numbers are best-of-5 batch runs, and only for the matched configs.
 - Each dataset has its own model; no cross-dataset transfer was tested.
-- Validated only for unfiltered search on a static index. With deletions the model is ignored and
-  plain ef search runs. Filters are not supported by `search_adaptive`.
+- Validated only for unfiltered search on a static index. With deletions, the model is ignored;
+  explicit `max_evals` / `patience` still apply, and with neither set this is plain ef search.
+  Filters are not supported by `search_adaptive`.
+- Selections frozen before testing: the GloVe `selection.json` was committed (f14c9f2) before its
+  test run. The SIFT protocol was committed before testing, but its `selection.json` was first
+  committed together with the test outputs. It was produced before the test run, but git does not
+  prove that.
 - WSL2 inside Docker on a laptop: timings are comparable within this run only.
 - Training cost: 873 s (SIFT) and 934 s (GloVe) of brute-force ground truth plus ~5 s per training trace and a few minutes
   of model fitting. This is not counted in per-query latency.
@@ -256,19 +278,54 @@ claimed.
 
 ## Reproduce
 
+**Regenerate the tables and plots from the published raw data (no index, training or timing).**
+Each run has an audit bundle: every per-pass latency, returned ids and distances, stats, test
+ground truth, oracle inputs, selection, input/model/trace hashes and the measurement environment.
+The bundles are published as GitHub release assets; `bundle.json` in each run directory gives
+the file name and sha256.
+
+```bash
+gh release download adaptive-search-data-v1 --repo jaideepgorijavolu-oss/vecsearch -D bundles
+sha256sum bundles/*.tar          # compare with bench/ann/results/adaptive_search/*/bundle.json
+tar -xf bundles/sift1m_v1_audit_bundle.tar -C bundles && tar -xf bundles/glove_v1_audit_bundle.tar -C bundles
+mkdir -p out/sift out/glove
+BUNDLE=bundles/sift1m_v1 python3 bench/ann/adaptive/study.py report out/sift      # numpy, matplotlib
+BUNDLE=bundles/glove_v1 DATASET=glove python3 bench/ann/adaptive/study.py report out/glove
+```
+
+`out/*/table.md` and `summary.json` reproduce the committed ones exactly.
+
+**Full rerun from a fresh clone.** Use a fresh data volume and a new run id; existing runs and
+data roots are never overwritten.
+
 ```bash
 docker build -t vecsearch-dev -f docker/dev.Dockerfile docker
-tools/dev.sh "bench/ann/adaptive/prepare_all.sh bench/ann/results/adaptive_search/sift1m_v1"   # ~25 min
-for s in traces select test report stress mt; do
-  tools/dev.sh "python3 bench/ann/adaptive/study.py $s bench/ann/results/adaptive_search/sift1m_v1"
+export R=bench/ann/results/adaptive_search
+# downloads ann-benchmarks SIFT HDF5 (~500 MB) and TEXMEX sift.tar.gz (~161 MB), checks sources.json
+tools/dev.sh "bench/ann/adaptive/prepare_all.sh $R/sift1m_rerun"              # ~25 min
+for s in traces select test bundle report stress mt; do
+  tools/dev.sh "python3 bench/ann/adaptive/study.py $s $R/sift1m_rerun"
 done
-tools/dev.sh "bench/ann/adaptive/prepare_glove_all.sh bench/ann/results/adaptive_search/glove_v1"  # ~25 min
-for s in traces select test report mt; do
-  tools/dev.sh "DATASET=glove python3 bench/ann/adaptive/study.py $s bench/ann/results/adaptive_search/glove_v1"
+tools/dev.sh "bench/ann/adaptive/prepare_glove_all.sh $R/glove_rerun"         # ~25 min
+for s in traces select test bundle report mt; do
+  tools/dev.sh "DATASET=glove python3 bench/ann/adaptive/study.py $s $R/glove_rerun"
 done
 ```
 
-Large intermediates (fbin splits, ground truth, traces, raw per-run ids, latencies and stats) are
-in the `vecsearch-data` Docker volume under `adaptive/`. The repo keeps the manifests, models,
-`summary.json` (every row, the selection and the environment) and per-query test outputs
-(`per_query_test.npz`).
+Indexes are built on one thread and are deterministic: a rebuild should match the snapshot hash
+in `inputs.json`. Timings from another machine are a new measurement, not a reproduction of
+these numbers.
+
+Layout: inputs, the fingerprinted trace cache, raw run outputs (`runs_by_id/<run id>/`) and
+bundles live in the `vecsearch-data` Docker volume under `adaptive/`. Each run directory in git
+keeps:
+- `inputs.json` and `traces.json`: the pinned input and trace hashes;
+- the selection and model hashes;
+- `bundle.json`;
+- the report outputs.
+
+The two published runs predate run isolation. `adopt.json` records how they were brought under
+it. Every trace was regenerated through the cache and is byte-identical to the original, and
+input hashes were checked against those recorded at preparation. Their measurement environment
+was captured by the first report generation, right after timing, and is labeled that way in the
+bundle.

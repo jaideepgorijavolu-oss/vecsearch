@@ -1,0 +1,20 @@
+{
+ "dataset": "glove",
+ "index": {
+  "glove_m16_efc200_s100.hnsw": "e5a7ca8addf699723ca6577877191fb98a09eff9266b48c0d4082c3c0789a840"
+ },
+ "fbin": {
+  "base": "45d794a58d2a41e5a3ebf5ceabcb78cbfbd8ed5c712e39a35ad4b8102200e93e",
+  "learn": "24223c8f6dbc3ccd110a91f13154e2c6f7b22ed1fb807d64d9faa893a91b69de",
+  "val": "1f35039e6a10d3e7adf39ebb8b8bac213227e8d97b8d36d5a69dcd23bcdae955",
+  "test": "60828f8578a78d04592bf12454f9c224707fb016a12b1d97d546eab120c4426e"
+ },
+ "gt": {
+  "learn": "d8acd9f8bae02a8e6c818b4b7f8e8620d69b4007771da9d3e7e448fed676e3c9",
+  "val": "e260f6c67a8d44a9394b2381f84285a9c687f500c77b0f4d2be316bb5e070567",
+  "test": "7945457d2e34f48179dba98607d5f8ecdf101e9cf6b219d98f83b013a0162153"
+ },
+ "recorded": "2026-10-08T04:53:08+0000",
+ "code_fingerprint_at_pin": "20f52294ea57cccf16e624e82dfaa21b841282d2af1b8c77b5e744ba6dddc05f",
+ "note": "Pinned after the run by `adopt`; index and fbin hashes verified against prepare.log and split_manifest.json. GT hashes recorded here."
+}

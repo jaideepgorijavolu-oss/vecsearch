@@ -1,0 +1,20 @@
+{
+ "dataset": "sift",
+ "index": {
+  "sift_m16_efc200_s100.hnsw": "1ff6d63a975485c91f7ebc2512da3f70d1f944a92ada757820e0c87f031b664b"
+ },
+ "fbin": {
+  "base": "8c7b3d999ba3133f865af72df078f77c2d248fdb80571d7ea1f1bb8e1750658e",
+  "learn": "9decdde0b9bc0e990295707b9516adea1da371f3abf917d89e7f1ca02314dd8f",
+  "val": "f4b588b24bc6f972756741fd2f06f54a931846f54bb321d70a3afdb1cbc72fd9",
+  "test": "e499e7ebd620fb48c93224692df7733a1d7ce04df23a3b2a042e29fb0c18d25e"
+ },
+ "gt": {
+  "learn": "de216b9d6a24f78ac1c5fee79a267bcf01f0faff9e2be6159393ae852283c9b6",
+  "val": "f0416193155f152fa80843ed16e4fa35d75ca3bb624748740014a14c278a19f6",
+  "test": "453b94ca9bee97c750ad7872ae8bc468d6133282cf27633e61d2a8b64a22f7da"
+ },
+ "recorded": "2026-10-08T04:50:58+0000",
+ "code_fingerprint_at_pin": "20f52294ea57cccf16e624e82dfaa21b841282d2af1b8c77b5e744ba6dddc05f",
+ "note": "Pinned after the run by `adopt`; index and fbin hashes verified against prepare.log and split_manifest.json. GT hashes recorded here."
+}

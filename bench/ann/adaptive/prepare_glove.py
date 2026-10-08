@@ -23,7 +23,7 @@ import numpy as np
 sys.path.insert(0, str(pathlib.Path(__file__).parents[1]))
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 from datasets import data_dir, load  # noqa: E402
-from prepare import row_keys, sha256, write_fbin  # noqa: E402
+from prepare import row_keys, sha256, verify_sources, write_fbin  # noqa: E402
 
 SEED = 0
 N_LEARN = 100_000
@@ -35,7 +35,8 @@ def main() -> None:
     out = data_dir() / "adaptive"
     out.mkdir(exist_ok=True)
 
-    train, test, _, metric = load("glove")
+    train, test, _, metric = load("glove")  # downloads the HDF5 file if missing
+    verify_sources(["glove-100-angular.hdf5"])
     assert metric == "cosine"
     rng = np.random.default_rng(SEED)
     learn_rows = np.sort(rng.choice(len(train), N_LEARN, replace=False))

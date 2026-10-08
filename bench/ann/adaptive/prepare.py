@@ -51,6 +51,15 @@ def row_keys(x: np.ndarray) -> list[bytes]:
     return [r.tobytes() for r in np.ascontiguousarray(x)]
 
 
+def verify_sources(names: list[str]) -> None:
+    """Inputs must be byte-identical to the ones the published runs used (sources.json)."""
+    want = json.loads((pathlib.Path(__file__).parent / "sources.json").read_text())
+    for name in names:
+        got = sha256(data_dir() / name)
+        if got != want[name]:
+            raise SystemExit(f"{data_dir() / name}: sha256 {got} != expected {want[name]}")
+
+
 def main() -> None:
     run_dir = pathlib.Path(sys.argv[1])
     run_dir.mkdir(parents=True, exist_ok=True)
@@ -58,7 +67,9 @@ def main() -> None:
     out.mkdir(exist_ok=True)
     texmex = data_dir() / "texmex" / "sift"
 
-    train, test, _, metric = load("sift")
+    train, test, _, metric = load("sift")  # downloads the HDF5 file if missing
+    verify_sources(["sift-128-euclidean.hdf5", "texmex/sift/sift_base.fvecs",
+                    "texmex/sift/sift_learn.fvecs"])
     assert metric == "l2"
     base_fvecs = read_fvecs(texmex / "sift_base.fvecs")
     assert np.array_equal(train, base_fvecs), "HDF5 train differs from TEXMEX sift_base"

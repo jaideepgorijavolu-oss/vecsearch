@@ -22,7 +22,7 @@ SearchResult exact(const std::vector<float>& base, std::size_t dim, Metric m,
 }
 
 std::string temp_path(const char* name) {
-  return (std::filesystem::temp_directory_path() / name).string();
+  return vecsearch::test::unique_temp_path(name);
 }
 
 }  // namespace
