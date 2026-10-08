@@ -6,6 +6,7 @@ add_executable(vecsearch_tests
   test_distance.cpp
   test_hnsw.cpp
   test_corrupt.cpp
+  test_adaptive.cpp
 )
 target_link_libraries(vecsearch_tests PRIVATE vecsearch GTest::gtest_main)
 target_compile_definitions(vecsearch_tests PRIVATE VECSEARCH_TEST_DIR="${CMAKE_CURRENT_SOURCE_DIR}")

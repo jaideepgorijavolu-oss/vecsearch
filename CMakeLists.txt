@@ -41,6 +41,7 @@ add_library(vecsearch STATIC
   src/distance/dispatch.cpp
   src/index/flat_index.cpp
   src/index/hnsw_index.cpp
+  src/index/termination_model.cpp
 )
 target_include_directories(vecsearch PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_link_libraries(vecsearch PUBLIC Threads::Threads)

@@ -109,3 +109,5 @@ MIT, see [LICENSE](LICENSE).
   concurrency, deletion and filtering.
 - [docs/RESULTS.md](docs/RESULTS.md): hardware, methodology, all benchmark numbers.
 - [docs/LEARNING_LOG.md](docs/LEARNING_LOG.md): per-phase notes and interview questions.
+- [docs/adaptive_search/RESULTS.md](docs/adaptive_search/RESULTS.md): learned early termination
+  experiment (SIFT1M: no latency win; GloVe-100: 21% faster than fixed ef at ~0.947 recall).

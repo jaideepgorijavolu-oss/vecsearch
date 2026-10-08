@@ -1,0 +1,12 @@
+{"cmd": ["build/bench/bench/ann/adaptive_eval", "batch", "/data/adaptive/glove_m16_efc200_s100.hnsw", "/data/adaptive/glove_test.fbin", "/data/adaptive/runs_glove/mt_configs.txt", "5", "16"], "rc": 0, "seconds": 81.0495376586914}
+{"name": "fixed_ef96", "threads": 16, "reps": 5, "best_seconds": 0.205860, "qps": 24288.4}
+{"name": "fixed_ef320", "threads": 16, "reps": 5, "best_seconds": 0.631700, "qps": 7915.1}
+{"name": "fixed_ef1024", "threads": 16, "reps": 5, "best_seconds": 1.627650, "qps": 3071.9}
+{"name": "learned_0.8", "threads": 16, "reps": 5, "best_seconds": 0.201335, "qps": 24834.2}
+{"name": "cap_0.8", "threads": 16, "reps": 5, "best_seconds": 0.240630, "qps": 20778.8}
+{"name": "learned_0.9", "threads": 16, "reps": 5, "best_seconds": 0.429236, "qps": 11648.6}
+{"name": "cap_0.9", "threads": 16, "reps": 5, "best_seconds": 0.657282, "qps": 7607.1}
+{"name": "learned_0.95", "threads": 16, "reps": 5, "best_seconds": 0.890130, "qps": 5617.2}
+{"name": "cap_0.95", "threads": 16, "reps": 5, "best_seconds": 1.489835, "qps": 3356.1}
+{"name": "patience_0.8", "threads": 16, "reps": 5, "best_seconds": 0.210956, "qps": 23701.7}
+{"name": "patience_0.9", "threads": 16, "reps": 5, "best_seconds": 0.532551, "qps": 9388.8}

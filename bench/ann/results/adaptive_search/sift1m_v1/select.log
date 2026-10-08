@@ -1,0 +1,42 @@
+linear_ef128_c100: val R^2(log T) 0.4010
+gbdt_ef128_c100: val R^2(log T) 0.4456
+linear_q_ef128_c100: val R^2(log T) 0.5150
+gbdt_q_ef128_c100: val R^2(log T) 0.5621
+linear_ef128_c200: val R^2(log T) 0.4444
+gbdt_ef128_c200: val R^2(log T) 0.5267
+linear_q_ef128_c200: val R^2(log T) 0.5348
+gbdt_q_ef128_c200: val R^2(log T) 0.5987
+linear_ef128_c400: val R^2(log T) 0.5301
+gbdt_ef128_c400: val R^2(log T) 0.6291
+linear_q_ef128_c400: val R^2(log T) 0.5839
+gbdt_q_ef128_c400: val R^2(log T) 0.6603
+linear_ef256_c100: val R^2(log T) 0.3922
+gbdt_ef256_c100: val R^2(log T) 0.4379
+linear_q_ef256_c100: val R^2(log T) 0.5085
+gbdt_q_ef256_c100: val R^2(log T) 0.5586
+linear_ef256_c200: val R^2(log T) 0.4324
+gbdt_ef256_c200: val R^2(log T) 0.5120
+linear_q_ef256_c200: val R^2(log T) 0.5271
+gbdt_q_ef256_c200: val R^2(log T) 0.5992
+linear_ef256_c400: val R^2(log T) 0.5129
+gbdt_ef256_c400: val R^2(log T) 0.6124
+linear_q_ef256_c400: val R^2(log T) 0.5723
+gbdt_q_ef256_c400: val R^2(log T) 0.6517
+linear_ef512_c100: val R^2(log T) 0.3880
+gbdt_ef512_c100: val R^2(log T) 0.4326
+linear_q_ef512_c100: val R^2(log T) 0.5062
+gbdt_q_ef512_c100: val R^2(log T) 0.5569
+linear_ef512_c200: val R^2(log T) 0.4252
+gbdt_ef512_c200: val R^2(log T) 0.5066
+linear_q_ef512_c200: val R^2(log T) 0.5229
+gbdt_q_ef512_c200: val R^2(log T) 0.5943
+linear_ef512_c400: val R^2(log T) 0.5060
+gbdt_ef512_c400: val R^2(log T) 0.6060
+linear_q_ef512_c400: val R^2(log T) 0.5686
+gbdt_q_ef512_c400: val R^2(log T) 0.6509
+{"cmd": ["build/bench/bench/ann/adaptive_eval", "run", "/data/adaptive/sift_m16_efc200_s100.hnsw", "/data/adaptive/sift_val.fbin", "/data/adaptive/runs/val_sweep/configs.txt", "0", "/data/adaptive/runs/val_sweep"], "rc": 0, "seconds": 73.10452246665955}
+pass 0/0 done
+{"cmd": ["build/bench/bench/ann/adaptive_eval", "run", "/data/adaptive/sift_m16_efc200_s100.hnsw", "/data/adaptive/sift_val.fbin", "/data/adaptive/runs/val_fixed_evals/configs.txt", "0", "/data/adaptive/runs/val_fixed_evals"], "rc": 0, "seconds": 28.93025255203247}
+pass 0/0 done
+{"cmd": ["build/bench/bench/ann/adaptive_eval", "run", "/data/adaptive/sift_m16_efc200_s100.hnsw", "/data/adaptive/sift_val.fbin", "/data/adaptive/runs/val_confirm/configs.txt", "0", "/data/adaptive/runs/val_confirm"], "rc": 0, "seconds": 6.567173719406128}
+pass 0/0 done

@@ -1,0 +1,79 @@
+[
+ {
+  "name": "fixed_ef96",
+  "threads": 16,
+  "reps": 5,
+  "best_seconds": 0.20586,
+  "qps": 24288.4
+ },
+ {
+  "name": "fixed_ef320",
+  "threads": 16,
+  "reps": 5,
+  "best_seconds": 0.6317,
+  "qps": 7915.1
+ },
+ {
+  "name": "fixed_ef1024",
+  "threads": 16,
+  "reps": 5,
+  "best_seconds": 1.62765,
+  "qps": 3071.9
+ },
+ {
+  "name": "learned_0.8",
+  "threads": 16,
+  "reps": 5,
+  "best_seconds": 0.201335,
+  "qps": 24834.2
+ },
+ {
+  "name": "cap_0.8",
+  "threads": 16,
+  "reps": 5,
+  "best_seconds": 0.24063,
+  "qps": 20778.8
+ },
+ {
+  "name": "learned_0.9",
+  "threads": 16,
+  "reps": 5,
+  "best_seconds": 0.429236,
+  "qps": 11648.6
+ },
+ {
+  "name": "cap_0.9",
+  "threads": 16,
+  "reps": 5,
+  "best_seconds": 0.657282,
+  "qps": 7607.1
+ },
+ {
+  "name": "learned_0.95",
+  "threads": 16,
+  "reps": 5,
+  "best_seconds": 0.89013,
+  "qps": 5617.2
+ },
+ {
+  "name": "cap_0.95",
+  "threads": 16,
+  "reps": 5,
+  "best_seconds": 1.489835,
+  "qps": 3356.1
+ },
+ {
+  "name": "patience_0.8",
+  "threads": 16,
+  "reps": 5,
+  "best_seconds": 0.210956,
+  "qps": 23701.7
+ },
+ {
+  "name": "patience_0.9",
+  "threads": 16,
+  "reps": 5,
+  "best_seconds": 0.532551,
+  "qps": 9388.8
+ }
+]

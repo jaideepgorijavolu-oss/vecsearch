@@ -1,0 +1,7 @@
+{"cmd": ["taskset", "-c", "3", "build/bench/bench/ann/adaptive_eval", "run", "/data/adaptive/sift_m16_efc200_s100.hnsw", "/data/adaptive/sift_test.fbin", "/data/adaptive/runs/test/configs.txt", "5", "/data/adaptive/runs/test"], "rc": 0, "seconds": 389.95001006126404}
+pass 0/5 done
+pass 1/5 done
+pass 2/5 done
+pass 3/5 done
+pass 4/5 done
+pass 5/5 done

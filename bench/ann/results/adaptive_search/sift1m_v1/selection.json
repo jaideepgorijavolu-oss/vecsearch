@@ -1,0 +1,1953 @@
+{
+ "chosen": {
+  "learned@0.9": {
+   "method": "learned",
+   "model": "gbdt_q_ef128_c400",
+   "kind": "gbdt",
+   "use_query": true,
+   "ef_max": 128,
+   "checkpoint": 400,
+   "target": 0.9,
+   "multiplier": 0.8063128104772668,
+   "val_r2_log": 0.6602757036555177,
+   "recall": 0.9,
+   "evals": 598.3206,
+   "val_recall_real": 0.9,
+   "val_evals_real": 598.3206
+  },
+  "cap@0.9": {
+   "method": "cap",
+   "ef_max": 128,
+   "target": 0.9,
+   "max_evals": 693,
+   "recall": 0.9,
+   "evals": 692.83,
+   "val_recall_real": 0.9,
+   "val_evals_real": 692.83
+  },
+  "learned@0.95": {
+   "method": "learned",
+   "model": "gbdt_q_ef128_c400",
+   "kind": "gbdt",
+   "use_query": true,
+   "ef_max": 128,
+   "checkpoint": 400,
+   "target": 0.95,
+   "multiplier": 1.2610139522072699,
+   "val_r2_log": 0.6602757036555177,
+   "recall": 0.95,
+   "evals": 875.5072,
+   "val_recall_real": 0.95,
+   "val_evals_real": 875.5072
+  },
+  "cap@0.95": {
+   "method": "cap",
+   "ef_max": 128,
+   "target": 0.95,
+   "max_evals": 1084,
+   "recall": 0.95,
+   "evals": 1076.6872,
+   "val_recall_real": 0.95,
+   "val_evals_real": 1076.6872
+  },
+  "learned@0.99": {
+   "method": "learned",
+   "model": "gbdt_q_ef256_c400",
+   "kind": "gbdt",
+   "use_query": true,
+   "ef_max": 256,
+   "checkpoint": 400,
+   "target": 0.99,
+   "multiplier": 2.3022683940615343,
+   "val_r2_log": 0.6517283218676052,
+   "recall": 0.99,
+   "evals": 1732.5528,
+   "val_recall_real": 0.99,
+   "val_evals_real": 1732.5528
+  },
+  "cap@0.99": {
+   "method": "cap",
+   "ef_max": 256,
+   "target": 0.99,
+   "max_evals": 2450,
+   "recall": 0.99,
+   "evals": 2391.9572,
+   "val_recall_real": 0.99,
+   "val_evals_real": 2391.9572
+  },
+  "fixed@0.9": {
+   "name": "fixed_ef32",
+   "recall": 0.9051199999999999,
+   "recall_tie": 0.90586,
+   "evals": 637.6194
+  },
+  "patience@0.9": {
+   "name": "pat_ef64_n12",
+   "recall": 0.9041799999999999,
+   "recall_tie": 0.9049,
+   "evals": 620.3092
+  },
+  "fixed@0.95": {
+   "name": "fixed_ef56",
+   "recall": 0.9544600000000001,
+   "recall_tie": 0.9548600000000003,
+   "evals": 1005.2738
+  },
+  "patience@0.95": {
+   "name": "pat_ef64_n25",
+   "recall": 0.95068,
+   "recall_tie": 0.9512200000000001,
+   "evals": 908.6828
+  },
+  "fixed@0.99": {
+   "name": "fixed_ef160",
+   "recall": 0.9935799999999999,
+   "recall_tie": 0.99366,
+   "evals": 2441.4472
+  },
+  "patience@0.99": {
+   "name": "pat_ef256_n80",
+   "recall": 0.9908400000000002,
+   "recall_tie": 0.9909600000000001,
+   "evals": 1948.9102
+  }
+ },
+ "simulated": [
+  {
+   "method": "full",
+   "ef_max": 128,
+   "recall": 0.9898600000000001,
+   "evals": 2021.044
+  },
+  {
+   "method": "cap",
+   "ef_max": 128,
+   "target": 0.9,
+   "max_evals": 693,
+   "recall": 0.9,
+   "evals": 692.83,
+   "val_recall_real": 0.9,
+   "val_evals_real": 692.83
+  },
+  {
+   "method": "cap",
+   "ef_max": 128,
+   "target": 0.95,
+   "max_evals": 1084,
+   "recall": 0.95,
+   "evals": 1076.6872,
+   "val_recall_real": 0.95,
+   "val_evals_real": 1076.6872
+  },
+  {
+   "method": "learned",
+   "model": "linear_ef128_c100",
+   "kind": "linear",
+   "use_query": false,
+   "ef_max": 128,
+   "checkpoint": 100,
+   "target": 0.9,
+   "multiplier": 1.041559896315372,
+   "val_r2_log": 0.40096076140180426,
+   "recall": 0.9,
+   "evals": 647.3526
+  },
+  {
+   "method": "learned",
+   "model": "linear_ef128_c100",
+   "kind": "linear",
+   "use_query": false,
+   "ef_max": 128,
+   "checkpoint": 100,
+   "target": 0.95,
+   "multiplier": 1.5446507043679194,
+   "val_r2_log": 0.40096076140180426,
+   "recall": 0.95,
+   "evals": 958.3326
+  },
+  {
+   "method": "learned",
+   "model": "gbdt_ef128_c100",
+   "kind": "gbdt",
+   "use_query": false,
+   "ef_max": 128,
+   "checkpoint": 100,
+   "target": 0.9,
+   "multiplier": 1.022371147300519,
+   "val_r2_log": 0.4456327597425921,
+   "recall": 0.9,
+   "evals": 642.923
+  },
+  {
+   "method": "learned",
+   "model": "gbdt_ef128_c100",
+   "kind": "gbdt",
+   "use_query": false,
+   "ef_max": 128,
+   "checkpoint": 100,
+   "target": 0.95,
+   "multiplier": 1.5000723103889329,
+   "val_r2_log": 0.4456327597425921,
+   "recall": 0.95,
+   "evals": 942.6554
+  },
+  {
+   "method": "learned",
+   "model": "linear_q_ef128_c100",
+   "kind": "linear",
+   "use_query": true,
+   "ef_max": 128,
+   "checkpoint": 100,
+   "target": 0.9,
+   "multiplier": 0.9911141419903868,
+   "val_r2_log": 0.5150426554260847,
+   "recall": 0.9,
+   "evals": 638.023
+  },
+  {
+   "method": "learned",
+   "model": "linear_q_ef128_c100",
+   "kind": "linear",
+   "use_query": true,
+   "ef_max": 128,
+   "checkpoint": 100,
+   "target": 0.95,
+   "multiplier": 1.4484316532243207,
+   "val_r2_log": 0.5150426554260847,
+   "recall": 0.95,
+   "evals": 931.2412
+  },
+  {
+   "method": "learned",
+   "model": "gbdt_q_ef128_c100",
+   "kind": "gbdt",
+   "use_query": true,
+   "ef_max": 128,
+   "checkpoint": 100,
+   "target": 0.9,
+   "multiplier": 0.9630554256651663,
+   "val_r2_log": 0.5620855860873744,
+   "recall": 0.9,
+   "evals": 628.1212
+  },
+  {
+   "method": "learned",
+   "model": "gbdt_q_ef128_c100",
+   "kind": "gbdt",
+   "use_query": true,
+   "ef_max": 128,
+   "checkpoint": 100,
+   "target": 0.95,
+   "multiplier": 1.3946132632262418,
+   "val_r2_log": 0.5620855860873744,
+   "recall": 0.95,
+   "evals": 908.9902
+  },
+  {
+   "method": "learned",
+   "model": "linear_ef128_c200",
+   "kind": "linear",
+   "use_query": false,
+   "ef_max": 128,
+   "checkpoint": 200,
+   "target": 0.9,
+   "multiplier": 0.9934696704005541,
+   "val_r2_log": 0.44437775091726983,
+   "recall": 0.9,
+   "evals": 630.8782
+  },
+  {
+   "method": "learned",
+   "model": "linear_ef128_c200",
+   "kind": "linear",
+   "use_query": false,
+   "ef_max": 128,
+   "checkpoint": 200,
+   "target": 0.95,
+   "multiplier": 1.4918774891647926,
+   "val_r2_log": 0.44437775091726983,
+   "recall": 0.95,
+   "evals": 942.7268
+  },
+  {
+   "method": "learned",
+   "model": "gbdt_ef128_c200",
+   "kind": "gbdt",
+   "use_query": false,
+   "ef_max": 128,
+   "checkpoint": 200,
+   "target": 0.9,
+   "multiplier": 0.9489708058259972,
+   "val_r2_log": 0.5267037699305929,
+   "recall": 0.9000000000000001,
+   "evals": 620.4718
+  },
+  {
+   "method": "learned",
+   "model": "gbdt_ef128_c200",
+   "kind": "gbdt",
+   "use_query": false,
+   "ef_max": 128,
+   "checkpoint": 200,
+   "target": 0.95,
+   "multiplier": 1.4056516244277424,
+   "val_r2_log": 0.5267037699305929,
+   "recall": 0.95,
+   "evals": 912.8756
+  },
+  {
+   "method": "learned",
+   "model": "linear_q_ef128_c200",
+   "kind": "linear",
+   "use_query": true,
+   "ef_max": 128,
+   "checkpoint": 200,
+   "target": 0.9,
+   "multiplier": 0.9441340210621488,
+   "val_r2_log": 0.5348023514385888,
+   "recall": 0.9,
+   "evals": 617.0264
+  },
+  {
+   "method": "learned",
+   "model": "linear_q_ef128_c200",
+   "kind": "linear",
+   "use_query": true,
+   "ef_max": 128,
+   "checkpoint": 200,
+   "target": 0.95,
+   "multiplier": 1.4105464106881225,
+   "val_r2_log": 0.5348023514385888,
+   "recall": 0.95,
+   "evals": 915.7212
+  },
+  {
+   "method": "learned",
+   "model": "gbdt_q_ef128_c200",
+   "kind": "gbdt",
+   "use_query": true,
+   "ef_max": 128,
+   "checkpoint": 200,
+   "target": 0.9,
+   "multiplier": 0.9114386953512321,
+   "val_r2_log": 0.598710964927696,
+   "recall": 0.9,
+   "evals": 607.4954
+  },
+  {
+   "method": "learned",
+   "model": "gbdt_q_ef128_c200",
+   "kind": "gbdt",
+   "use_query": true,
+   "ef_max": 128,
+   "checkpoint": 200,
+   "target": 0.95,
+   "multiplier": 1.3472202115965006,
+   "val_r2_log": 0.598710964927696,
+   "recall": 0.95,
+   "evals": 891.4084
+  },
+  {
+   "method": "learned",
+   "model": "linear_ef128_c400",
+   "kind": "linear",
+   "use_query": false,
+   "ef_max": 128,
+   "checkpoint": 400,
+   "target": 0.9,
+   "multiplier": 0.9055727278971533,
+   "val_r2_log": 0.5300993549676065,
+   "recall": 0.9,
+   "evals": 626.812
+  },
+  {
+   "method": "learned",
+   "model": "linear_ef128_c400",
+   "kind": "linear",
+   "use_query": false,
+   "ef_max": 128,
+   "checkpoint": 400,
+   "target": 0.95,
+   "multiplier": 1.4195792946395924,
+   "val_r2_log": 0.5300993549676065,
+   "recall": 0.95,
+   "evals": 935.9136
+  },
+  {
+   "method": "learned",
+   "model": "gbdt_ef128_c400",
+   "kind": "gbdt",
+   "use_query": false,
+   "ef_max": 128,
+   "checkpoint": 400,
+   "target": 0.9,
+   "multiplier": 0.8303553389612316,
+   "val_r2_log": 0.6290610865792265,
+   "recall": 0.9000000000000001,
+   "evals": 605.508
+  },
+  {
+   "method": "learned",
+   "model": "gbdt_ef128_c400",
+   "kind": "gbdt",
+   "use_query": false,
+   "ef_max": 128,
+   "checkpoint": 400,
+   "target": 0.95,
+   "multiplier": 1.2960202174234468,
+   "val_r2_log": 0.6290610865792265,
+   "recall": 0.95,
+   "evals": 888.7092
+  },
+  {
+   "method": "learned",
+   "model": "linear_q_ef128_c400",
+   "kind": "linear",
+   "use_query": true,
+   "ef_max": 128,
+   "checkpoint": 400,
+   "target": 0.9,
+   "multiplier": 0.8620727954852296,
+   "val_r2_log": 0.5838780040039184,
+   "recall": 0.9,
+   "evals": 615.4222
+  },
+  {
+   "method": "learned",
+   "model": "linear_q_ef128_c400",
+   "kind": "linear",
+   "use_query": true,
+   "ef_max": 128,
+   "checkpoint": 400,
+   "target": 0.95,
+   "multiplier": 1.351293907878179,
+   "val_r2_log": 0.5838780040039184,
+   "recall": 0.95,
+   "evals": 911.9332
+  },
+  {
+   "method": "learned",
+   "model": "gbdt_q_ef128_c400",
+   "kind": "gbdt",
+   "use_query": true,
+   "ef_max": 128,
+   "checkpoint": 400,
+   "target": 0.9,
+   "multiplier": 0.8063128104772668,
+   "val_r2_log": 0.6602757036555177,
+   "recall": 0.9,
+   "evals": 598.3206,
+   "val_recall_real": 0.9,
+   "val_evals_real": 598.3206
+  },
+  {
+   "method": "learned",
+   "model": "gbdt_q_ef128_c400",
+   "kind": "gbdt",
+   "use_query": true,
+   "ef_max": 128,
+   "checkpoint": 400,
+   "target": 0.95,
+   "multiplier": 1.2610139522072699,
+   "val_r2_log": 0.6602757036555177,
+   "recall": 0.95,
+   "evals": 875.5072,
+   "val_recall_real": 0.95,
+   "val_evals_real": 875.5072
+  },
+  {
+   "method": "full",
+   "ef_max": 256,
+   "recall": 0.9979599999999998,
+   "evals": 3619.9398
+  },
+  {
+   "method": "cap",
+   "ef_max": 256,
+   "target": 0.9,
+   "max_evals": 693,
+   "recall": 0.9,
+   "evals": 693.0
+  },
+  {
+   "method": "cap",
+   "ef_max": 256,
+   "target": 0.95,
+   "max_evals": 1084,
+   "recall": 0.95,
+   "evals": 1083.8754
+  },
+  {
+   "method": "cap",
+   "ef_max": 256,
+   "target": 0.99,
+   "max_evals": 2450,
+   "recall": 0.99,
+   "evals": 2391.9572,
+   "val_recall_real": 0.99,
+   "val_evals_real": 2391.9572
+  },
+  {
+   "method": "learned",
+   "model": "linear_ef256_c100",
+   "kind": "linear",
+   "use_query": false,
+   "ef_max": 256,
+   "checkpoint": 100,
+   "target": 0.9,
+   "multiplier": 0.9663812683863123,
+   "val_r2_log": 0.3922095258251208,
+   "recall": 0.9,
+   "evals": 658.1984
+  },
+  {
+   "method": "learned",
+   "model": "linear_ef256_c100",
+   "kind": "linear",
+   "use_query": false,
+   "ef_max": 256,
+   "checkpoint": 100,
+   "target": 0.95,
+   "multiplier": 1.4253587290133356,
+   "val_r2_log": 0.3922095258251208,
+   "recall": 0.95,
+   "evals": 970.0202
+  },
+  {
+   "method": "learned",
+   "model": "linear_ef256_c100",
+   "kind": "linear",
+   "use_query": false,
+   "ef_max": 256,
+   "checkpoint": 100,
+   "target": 0.99,
+   "multiplier": 2.951541781144833,
+   "val_r2_log": 0.3922095258251208,
+   "recall": 0.99,
+   "evals": 1997.1296
+  },
+  {
+   "method": "learned",
+   "model": "gbdt_ef256_c100",
+   "kind": "gbdt",
+   "use_query": false,
+   "ef_max": 256,
+   "checkpoint": 100,
+   "target": 0.9,
+   "multiplier": 0.953840330183082,
+   "val_r2_log": 0.43789551292002926,
+   "recall": 0.9,
+   "evals": 662.0224
+  },
+  {
+   "method": "learned",
+   "model": "gbdt_ef256_c100",
+   "kind": "gbdt",
+   "use_query": false,
+   "ef_max": 256,
+   "checkpoint": 100,
+   "target": 0.95,
+   "multiplier": 1.3842647520197022,
+   "val_r2_log": 0.43789551292002926,
+   "recall": 0.95,
+   "evals": 960.2702
+  },
+  {
+   "method": "learned",
+   "model": "gbdt_ef256_c100",
+   "kind": "gbdt",
+   "use_query": false,
+   "ef_max": 256,
+   "checkpoint": 100,
+   "target": 0.99,
+   "multiplier": 2.829801394094084,
+   "val_r2_log": 0.43789551292002926,
+   "recall": 0.99,
+   "evals": 1954.824
+  },
+  {
+   "method": "learned",
+   "model": "linear_q_ef256_c100",
+   "kind": "linear",
+   "use_query": true,
+   "ef_max": 256,
+   "checkpoint": 100,
+   "target": 0.9,
+   "multiplier": 0.923267173482606,
+   "val_r2_log": 0.5084986032551113,
+   "recall": 0.9,
+   "evals": 657.3022
+  },
+  {
+   "method": "learned",
+   "model": "linear_q_ef256_c100",
+   "kind": "linear",
+   "use_query": true,
+   "ef_max": 256,
+   "checkpoint": 100,
+   "target": 0.95,
+   "multiplier": 1.3378045676181232,
+   "val_r2_log": 0.5084986032551113,
+   "recall": 0.95,
+   "evals": 951.5876
+  },
+  {
+   "method": "learned",
+   "model": "linear_q_ef256_c100",
+   "kind": "linear",
+   "use_query": true,
+   "ef_max": 256,
+   "checkpoint": 100,
+   "target": 0.99,
+   "multiplier": 2.6251280207292975,
+   "val_r2_log": 0.5084986032551113,
+   "recall": 0.99,
+   "evals": 1858.4182
+  },
+  {
+   "method": "learned",
+   "model": "gbdt_q_ef256_c100",
+   "kind": "gbdt",
+   "use_query": true,
+   "ef_max": 256,
+   "checkpoint": 100,
+   "target": 0.9,
+   "multiplier": 0.8991310589625598,
+   "val_r2_log": 0.5586459453693355,
+   "recall": 0.9,
+   "evals": 653.0542
+  },
+  {
+   "method": "learned",
+   "model": "gbdt_q_ef256_c100",
+   "kind": "gbdt",
+   "use_query": true,
+   "ef_max": 256,
+   "checkpoint": 100,
+   "target": 0.95,
+   "multiplier": 1.2890717225405814,
+   "val_r2_log": 0.5586459453693355,
+   "recall": 0.95,
+   "evals": 935.6078
+  },
+  {
+   "method": "learned",
+   "model": "gbdt_q_ef256_c100",
+   "kind": "gbdt",
+   "use_query": true,
+   "ef_max": 256,
+   "checkpoint": 100,
+   "target": 0.99,
+   "multiplier": 2.4411501628340515,
+   "val_r2_log": 0.5586459453693355,
+   "recall": 0.99,
+   "evals": 1768.868
+  },
+  {
+   "method": "learned",
+   "model": "linear_ef256_c200",
+   "kind": "linear",
+   "use_query": false,
+   "ef_max": 256,
+   "checkpoint": 200,
+   "target": 0.9,
+   "multiplier": 0.9147294748423905,
+   "val_r2_log": 0.4324401454708715,
+   "recall": 0.9000000000000001,
+   "evals": 637.377
+  },
+  {
+   "method": "learned",
+   "model": "linear_ef256_c200",
+   "kind": "linear",
+   "use_query": false,
+   "ef_max": 256,
+   "checkpoint": 200,
+   "target": 0.95,
+   "multiplier": 1.3711308447823898,
+   "val_r2_log": 0.4324401454708715,
+   "recall": 0.95,
+   "evals": 950.2454
+  },
+  {
+   "method": "learned",
+   "model": "linear_ef256_c200",
+   "kind": "linear",
+   "use_query": false,
+   "ef_max": 256,
+   "checkpoint": 200,
+   "target": 0.99,
+   "multiplier": 2.8987632854992174,
+   "val_r2_log": 0.4324401454708715,
+   "recall": 0.99,
+   "evals": 1996.8004
+  },
+  {
+   "method": "learned",
+   "model": "gbdt_ef256_c200",
+   "kind": "gbdt",
+   "use_query": false,
+   "ef_max": 256,
+   "checkpoint": 200,
+   "target": 0.9,
+   "multiplier": 0.8786734368863337,
+   "val_r2_log": 0.5119906906943661,
+   "recall": 0.9,
+   "evals": 636.279
+  },
+  {
+   "method": "learned",
+   "model": "gbdt_ef256_c200",
+   "kind": "gbdt",
+   "use_query": false,
+   "ef_max": 256,
+   "checkpoint": 200,
+   "target": 0.95,
+   "multiplier": 1.296996118819203,
+   "val_r2_log": 0.5119906906943661,
+   "recall": 0.95,
+   "evals": 932.3992
+  },
+  {
+   "method": "learned",
+   "model": "gbdt_ef256_c200",
+   "kind": "gbdt",
+   "use_query": false,
+   "ef_max": 256,
+   "checkpoint": 200,
+   "target": 0.99,
+   "multiplier": 2.6636873733185875,
+   "val_r2_log": 0.5119906906943661,
+   "recall": 0.99,
+   "evals": 1902.1966
+  },
+  {
+   "method": "learned",
+   "model": "linear_q_ef256_c200",
+   "kind": "linear",
+   "use_query": true,
+   "ef_max": 256,
+   "checkpoint": 200,
+   "target": 0.9,
+   "multiplier": 0.875185005020399,
+   "val_r2_log": 0.5270642078229104,
+   "recall": 0.9,
+   "evals": 633.1698
+  },
+  {
+   "method": "learned",
+   "model": "linear_q_ef256_c200",
+   "kind": "linear",
+   "use_query": true,
+   "ef_max": 256,
+   "checkpoint": 200,
+   "target": 0.95,
+   "multiplier": 1.2980756356861867,
+   "val_r2_log": 0.5270642078229104,
+   "recall": 0.95,
+   "evals": 932.3348
+  },
+  {
+   "method": "learned",
+   "model": "linear_q_ef256_c200",
+   "kind": "linear",
+   "use_query": true,
+   "ef_max": 256,
+   "checkpoint": 200,
+   "target": 0.99,
+   "multiplier": 2.5692748869164723,
+   "val_r2_log": 0.5270642078229104,
+   "recall": 0.99,
+   "evals": 1832.8678
+  },
+  {
+   "method": "learned",
+   "model": "gbdt_q_ef256_c200",
+   "kind": "gbdt",
+   "use_query": true,
+   "ef_max": 256,
+   "checkpoint": 200,
+   "target": 0.9,
+   "multiplier": 0.8379664018328351,
+   "val_r2_log": 0.5991844997599916,
+   "recall": 0.9,
+   "evals": 623.999
+  },
+  {
+   "method": "learned",
+   "model": "gbdt_q_ef256_c200",
+   "kind": "gbdt",
+   "use_query": true,
+   "ef_max": 256,
+   "checkpoint": 200,
+   "target": 0.95,
+   "multiplier": 1.2259221095467139,
+   "val_r2_log": 0.5991844997599916,
+   "recall": 0.95,
+   "evals": 905.4222
+  },
+  {
+   "method": "learned",
+   "model": "gbdt_q_ef256_c200",
+   "kind": "gbdt",
+   "use_query": true,
+   "ef_max": 256,
+   "checkpoint": 200,
+   "target": 0.99,
+   "multiplier": 2.4018413246081143,
+   "val_r2_log": 0.5991844997599916,
+   "recall": 0.99,
+   "evals": 1763.8342
+  },
+  {
+   "method": "learned",
+   "model": "linear_ef256_c400",
+   "kind": "linear",
+   "use_query": false,
+   "ef_max": 256,
+   "checkpoint": 400,
+   "target": 0.9,
+   "multiplier": 0.820333738598281,
+   "val_r2_log": 0.5128517645514468,
+   "recall": 0.9,
+   "evals": 628.7502
+  },
+  {
+   "method": "learned",
+   "model": "linear_ef256_c400",
+   "kind": "linear",
+   "use_query": false,
+   "ef_max": 256,
+   "checkpoint": 400,
+   "target": 0.95,
+   "multiplier": 1.2937158751248514,
+   "val_r2_log": 0.5128517645514468,
+   "recall": 0.95,
+   "evals": 940.1854
+  },
+  {
+   "method": "learned",
+   "model": "linear_ef256_c400",
+   "kind": "linear",
+   "use_query": false,
+   "ef_max": 256,
+   "checkpoint": 400,
+   "target": 0.99,
+   "multiplier": 2.8153566954027935,
+   "val_r2_log": 0.5128517645514468,
+   "recall": 0.99,
+   "evals": 1990.1804
+  },
+  {
+   "method": "learned",
+   "model": "gbdt_ef256_c400",
+   "kind": "gbdt",
+   "use_query": false,
+   "ef_max": 256,
+   "checkpoint": 400,
+   "target": 0.9,
+   "multiplier": 0.7461469387569974,
+   "val_r2_log": 0.6123853687336969,
+   "recall": 0.9,
+   "evals": 613.0998
+  },
+  {
+   "method": "learned",
+   "model": "gbdt_ef256_c400",
+   "kind": "gbdt",
+   "use_query": false,
+   "ef_max": 256,
+   "checkpoint": 400,
+   "target": 0.95,
+   "multiplier": 1.1740407455067223,
+   "val_r2_log": 0.6123853687336969,
+   "recall": 0.95,
+   "evals": 900.1516
+  },
+  {
+   "method": "learned",
+   "model": "gbdt_ef256_c400",
+   "kind": "gbdt",
+   "use_query": false,
+   "ef_max": 256,
+   "checkpoint": 400,
+   "target": 0.99,
+   "multiplier": 2.4801648046000158,
+   "val_r2_log": 0.6123853687336969,
+   "recall": 0.99,
+   "evals": 1833.5376
+  },
+  {
+   "method": "learned",
+   "model": "linear_q_ef256_c400",
+   "kind": "linear",
+   "use_query": true,
+   "ef_max": 256,
+   "checkpoint": 400,
+   "target": 0.9,
+   "multiplier": 0.7753398695317393,
+   "val_r2_log": 0.572299425060375,
+   "recall": 0.9,
+   "evals": 618.7312
+  },
+  {
+   "method": "learned",
+   "model": "linear_q_ef256_c400",
+   "kind": "linear",
+   "use_query": true,
+   "ef_max": 256,
+   "checkpoint": 400,
+   "target": 0.95,
+   "multiplier": 1.2215628652887307,
+   "val_r2_log": 0.572299425060375,
+   "recall": 0.9500000000000002,
+   "evals": 915.7758
+  },
+  {
+   "method": "learned",
+   "model": "linear_q_ef256_c400",
+   "kind": "linear",
+   "use_query": true,
+   "ef_max": 256,
+   "checkpoint": 400,
+   "target": 0.99,
+   "multiplier": 2.5488766076285883,
+   "val_r2_log": 0.572299425060375,
+   "recall": 0.99,
+   "evals": 1853.4044
+  },
+  {
+   "method": "learned",
+   "model": "gbdt_q_ef256_c400",
+   "kind": "gbdt",
+   "use_query": true,
+   "ef_max": 256,
+   "checkpoint": 400,
+   "target": 0.9,
+   "multiplier": 0.7193954766344178,
+   "val_r2_log": 0.6517283218676052,
+   "recall": 0.9,
+   "evals": 605.6006
+  },
+  {
+   "method": "learned",
+   "model": "gbdt_q_ef256_c400",
+   "kind": "gbdt",
+   "use_query": true,
+   "ef_max": 256,
+   "checkpoint": 400,
+   "target": 0.95,
+   "multiplier": 1.1347404533724117,
+   "val_r2_log": 0.6517283218676052,
+   "recall": 0.95,
+   "evals": 885.2262
+  },
+  {
+   "method": "learned",
+   "model": "gbdt_q_ef256_c400",
+   "kind": "gbdt",
+   "use_query": true,
+   "ef_max": 256,
+   "checkpoint": 400,
+   "target": 0.99,
+   "multiplier": 2.3022683940615343,
+   "val_r2_log": 0.6517283218676052,
+   "recall": 0.99,
+   "evals": 1732.5528,
+   "val_recall_real": 0.99,
+   "val_evals_real": 1732.5528
+  },
+  {
+   "method": "full",
+   "ef_max": 512,
+   "recall": 0.99974,
+   "evals": 6397.08
+  },
+  {
+   "method": "cap",
+   "ef_max": 512,
+   "target": 0.9,
+   "max_evals": 693,
+   "recall": 0.9,
+   "evals": 693.0
+  },
+  {
+   "method": "cap",
+   "ef_max": 512,
+   "target": 0.95,
+   "max_evals": 1084,
+   "recall": 0.95,
+   "evals": 1084.0
+  },
+  {
+   "method": "cap",
+   "ef_max": 512,
+   "target": 0.99,
+   "max_evals": 2450,
+   "recall": 0.99,
+   "evals": 2445.7944
+  },
+  {
+   "method": "learned",
+   "model": "linear_ef512_c100",
+   "kind": "linear",
+   "use_query": false,
+   "ef_max": 512,
+   "checkpoint": 100,
+   "target": 0.9,
+   "multiplier": 0.9465076778538898,
+   "val_r2_log": 0.3880237197929045,
+   "recall": 0.9,
+   "evals": 662.8418
+  },
+  {
+   "method": "learned",
+   "model": "linear_ef512_c100",
+   "kind": "linear",
+   "use_query": false,
+   "ef_max": 512,
+   "checkpoint": 100,
+   "target": 0.95,
+   "multiplier": 1.3947418722008487,
+   "val_r2_log": 0.3880237197929045,
+   "recall": 0.95,
+   "evals": 976.07
+  },
+  {
+   "method": "learned",
+   "model": "linear_ef512_c100",
+   "kind": "linear",
+   "use_query": false,
+   "ef_max": 512,
+   "checkpoint": 100,
+   "target": 0.99,
+   "multiplier": 2.8707427203386313,
+   "val_r2_log": 0.3880237197929045,
+   "recall": 0.9900000000000002,
+   "evals": 2007.1482
+  },
+  {
+   "method": "learned",
+   "model": "gbdt_ef512_c100",
+   "kind": "gbdt",
+   "use_query": false,
+   "ef_max": 512,
+   "checkpoint": 100,
+   "target": 0.9,
+   "multiplier": 0.9337973502349277,
+   "val_r2_log": 0.43259003520383077,
+   "recall": 0.9,
+   "evals": 669.0052
+  },
+  {
+   "method": "learned",
+   "model": "gbdt_ef512_c100",
+   "kind": "gbdt",
+   "use_query": false,
+   "ef_max": 512,
+   "checkpoint": 100,
+   "target": 0.95,
+   "multiplier": 1.3474407568299906,
+   "val_r2_log": 0.43259003520383077,
+   "recall": 0.95,
+   "evals": 964.8742
+  },
+  {
+   "method": "learned",
+   "model": "gbdt_ef512_c100",
+   "kind": "gbdt",
+   "use_query": false,
+   "ef_max": 512,
+   "checkpoint": 100,
+   "target": 0.99,
+   "multiplier": 2.7621121776710766,
+   "val_r2_log": 0.43259003520383077,
+   "recall": 0.99,
+   "evals": 1977.1296
+  },
+  {
+   "method": "learned",
+   "model": "linear_q_ef512_c100",
+   "kind": "linear",
+   "use_query": true,
+   "ef_max": 512,
+   "checkpoint": 100,
+   "target": 0.9,
+   "multiplier": 0.9083832867487046,
+   "val_r2_log": 0.5062244145557127,
+   "recall": 0.9,
+   "evals": 667.3774
+  },
+  {
+   "method": "learned",
+   "model": "linear_q_ef512_c100",
+   "kind": "linear",
+   "use_query": true,
+   "ef_max": 512,
+   "checkpoint": 100,
+   "target": 0.95,
+   "multiplier": 1.311390439499621,
+   "val_r2_log": 0.5062244145557127,
+   "recall": 0.95,
+   "evals": 962.5682
+  },
+  {
+   "method": "learned",
+   "model": "linear_q_ef512_c100",
+   "kind": "linear",
+   "use_query": true,
+   "ef_max": 512,
+   "checkpoint": 100,
+   "target": 0.99,
+   "multiplier": 2.5636990479585795,
+   "val_r2_log": 0.5062244145557127,
+   "recall": 0.99,
+   "evals": 1880.8688
+  },
+  {
+   "method": "learned",
+   "model": "gbdt_q_ef512_c100",
+   "kind": "gbdt",
+   "use_query": true,
+   "ef_max": 512,
+   "checkpoint": 100,
+   "target": 0.9,
+   "multiplier": 0.8802507590822967,
+   "val_r2_log": 0.5568683708681742,
+   "recall": 0.9,
+   "evals": 662.378
+  },
+  {
+   "method": "learned",
+   "model": "gbdt_q_ef512_c100",
+   "kind": "gbdt",
+   "use_query": true,
+   "ef_max": 512,
+   "checkpoint": 100,
+   "target": 0.95,
+   "multiplier": 1.2589020660213217,
+   "val_r2_log": 0.5568683708681742,
+   "recall": 0.95,
+   "evals": 946.6606
+  },
+  {
+   "method": "learned",
+   "model": "gbdt_q_ef512_c100",
+   "kind": "gbdt",
+   "use_query": true,
+   "ef_max": 512,
+   "checkpoint": 100,
+   "target": 0.99,
+   "multiplier": 2.4010307960675212,
+   "val_r2_log": 0.5568683708681742,
+   "recall": 0.99,
+   "evals": 1804.847
+  },
+  {
+   "method": "learned",
+   "model": "linear_ef512_c200",
+   "kind": "linear",
+   "use_query": false,
+   "ef_max": 512,
+   "checkpoint": 200,
+   "target": 0.9,
+   "multiplier": 0.8935429895352821,
+   "val_r2_log": 0.42520920352093383,
+   "recall": 0.9,
+   "evals": 640.3706
+  },
+  {
+   "method": "learned",
+   "model": "linear_ef512_c200",
+   "kind": "linear",
+   "use_query": false,
+   "ef_max": 512,
+   "checkpoint": 200,
+   "target": 0.95,
+   "multiplier": 1.339240356422015,
+   "val_r2_log": 0.42520920352093383,
+   "recall": 0.95,
+   "evals": 954.2992
+  },
+  {
+   "method": "learned",
+   "model": "linear_ef512_c200",
+   "kind": "linear",
+   "use_query": false,
+   "ef_max": 512,
+   "checkpoint": 200,
+   "target": 0.99,
+   "multiplier": 2.8366578515311915,
+   "val_r2_log": 0.42520920352093383,
+   "recall": 0.99,
+   "evals": 2016.0986
+  },
+  {
+   "method": "learned",
+   "model": "gbdt_ef512_c200",
+   "kind": "gbdt",
+   "use_query": false,
+   "ef_max": 512,
+   "checkpoint": 200,
+   "target": 0.9,
+   "multiplier": 0.8598156664923226,
+   "val_r2_log": 0.5065577253382465,
+   "recall": 0.9,
+   "evals": 644.57
+  },
+  {
+   "method": "learned",
+   "model": "gbdt_ef512_c200",
+   "kind": "gbdt",
+   "use_query": false,
+   "ef_max": 512,
+   "checkpoint": 200,
+   "target": 0.95,
+   "multiplier": 1.2646336117810792,
+   "val_r2_log": 0.5065577253382465,
+   "recall": 0.95,
+   "evals": 941.0396
+  },
+  {
+   "method": "learned",
+   "model": "gbdt_ef512_c200",
+   "kind": "gbdt",
+   "use_query": false,
+   "ef_max": 512,
+   "checkpoint": 200,
+   "target": 0.99,
+   "multiplier": 2.6066119611184853,
+   "val_r2_log": 0.5065577253382465,
+   "recall": 0.99,
+   "evals": 1933.4974
+  },
+  {
+   "method": "learned",
+   "model": "linear_q_ef512_c200",
+   "kind": "linear",
+   "use_query": true,
+   "ef_max": 512,
+   "checkpoint": 200,
+   "target": 0.9,
+   "multiplier": 0.8536893340569938,
+   "val_r2_log": 0.5228526292766741,
+   "recall": 0.9,
+   "evals": 637.5468
+  },
+  {
+   "method": "learned",
+   "model": "linear_q_ef512_c200",
+   "kind": "linear",
+   "use_query": true,
+   "ef_max": 512,
+   "checkpoint": 200,
+   "target": 0.95,
+   "multiplier": 1.267008689007671,
+   "val_r2_log": 0.5228526292766741,
+   "recall": 0.95,
+   "evals": 938.9852
+  },
+  {
+   "method": "learned",
+   "model": "linear_q_ef512_c200",
+   "kind": "linear",
+   "use_query": true,
+   "ef_max": 512,
+   "checkpoint": 200,
+   "target": 0.99,
+   "multiplier": 2.4978590350623406,
+   "val_r2_log": 0.5228526292766741,
+   "recall": 0.99,
+   "evals": 1844.7384
+  },
+  {
+   "method": "learned",
+   "model": "gbdt_q_ef512_c200",
+   "kind": "gbdt",
+   "use_query": true,
+   "ef_max": 512,
+   "checkpoint": 200,
+   "target": 0.9,
+   "multiplier": 0.8195544902988143,
+   "val_r2_log": 0.5942538632704302,
+   "recall": 0.9,
+   "evals": 633.3664
+  },
+  {
+   "method": "learned",
+   "model": "gbdt_q_ef512_c200",
+   "kind": "gbdt",
+   "use_query": true,
+   "ef_max": 512,
+   "checkpoint": 200,
+   "target": 0.95,
+   "multiplier": 1.1933064764632628,
+   "val_r2_log": 0.5942538632704302,
+   "recall": 0.95,
+   "evals": 914.5814
+  },
+  {
+   "method": "learned",
+   "model": "gbdt_q_ef512_c200",
+   "kind": "gbdt",
+   "use_query": true,
+   "ef_max": 512,
+   "checkpoint": 200,
+   "target": 0.99,
+   "multiplier": 2.3193312938680744,
+   "val_r2_log": 0.5942538632704302,
+   "recall": 0.99,
+   "evals": 1771.2216
+  },
+  {
+   "method": "learned",
+   "model": "linear_ef512_c400",
+   "kind": "linear",
+   "use_query": false,
+   "ef_max": 512,
+   "checkpoint": 400,
+   "target": 0.9,
+   "multiplier": 0.7957670263110079,
+   "val_r2_log": 0.5060428671170973,
+   "recall": 0.9,
+   "evals": 629.337
+  },
+  {
+   "method": "learned",
+   "model": "linear_ef512_c400",
+   "kind": "linear",
+   "use_query": false,
+   "ef_max": 512,
+   "checkpoint": 400,
+   "target": 0.95,
+   "multiplier": 1.2593547374031435,
+   "val_r2_log": 0.5060428671170973,
+   "recall": 0.95,
+   "evals": 942.631
+  },
+  {
+   "method": "learned",
+   "model": "linear_ef512_c400",
+   "kind": "linear",
+   "use_query": false,
+   "ef_max": 512,
+   "checkpoint": 400,
+   "target": 0.99,
+   "multiplier": 2.7307498775066374,
+   "val_r2_log": 0.5060428671170973,
+   "recall": 0.99,
+   "evals": 1998.457
+  },
+  {
+   "method": "learned",
+   "model": "gbdt_ef512_c400",
+   "kind": "gbdt",
+   "use_query": false,
+   "ef_max": 512,
+   "checkpoint": 400,
+   "target": 0.9,
+   "multiplier": 0.7233586598591466,
+   "val_r2_log": 0.6060106284129487,
+   "recall": 0.9,
+   "evals": 617.6794
+  },
+  {
+   "method": "learned",
+   "model": "gbdt_ef512_c400",
+   "kind": "gbdt",
+   "use_query": false,
+   "ef_max": 512,
+   "checkpoint": 400,
+   "target": 0.95,
+   "multiplier": 1.140497343132833,
+   "val_r2_log": 0.6060106284129487,
+   "recall": 0.95,
+   "evals": 906.3968
+  },
+  {
+   "method": "learned",
+   "model": "gbdt_ef512_c400",
+   "kind": "gbdt",
+   "use_query": false,
+   "ef_max": 512,
+   "checkpoint": 400,
+   "target": 0.99,
+   "multiplier": 2.4008124704103584,
+   "val_r2_log": 0.6060106284129487,
+   "recall": 0.99,
+   "evals": 1846.3598
+  },
+  {
+   "method": "learned",
+   "model": "linear_q_ef512_c400",
+   "kind": "linear",
+   "use_query": true,
+   "ef_max": 512,
+   "checkpoint": 400,
+   "target": 0.9,
+   "multiplier": 0.7511002103095666,
+   "val_r2_log": 0.5686254434289251,
+   "recall": 0.9,
+   "evals": 620.6248
+  },
+  {
+   "method": "learned",
+   "model": "linear_q_ef512_c400",
+   "kind": "linear",
+   "use_query": true,
+   "ef_max": 512,
+   "checkpoint": 400,
+   "target": 0.95,
+   "multiplier": 1.188611524622082,
+   "val_r2_log": 0.5686254434289251,
+   "recall": 0.95,
+   "evals": 920.534
+  },
+  {
+   "method": "learned",
+   "model": "linear_q_ef512_c400",
+   "kind": "linear",
+   "use_query": true,
+   "ef_max": 512,
+   "checkpoint": 400,
+   "target": 0.99,
+   "multiplier": 2.469739593468797,
+   "val_r2_log": 0.5686254434289251,
+   "recall": 0.99,
+   "evals": 1860.6864
+  },
+  {
+   "method": "learned",
+   "model": "gbdt_q_ef512_c400",
+   "kind": "gbdt",
+   "use_query": true,
+   "ef_max": 512,
+   "checkpoint": 400,
+   "target": 0.9,
+   "multiplier": 0.6982587853850145,
+   "val_r2_log": 0.6508941730161808,
+   "recall": 0.9,
+   "evals": 612.35
+  },
+  {
+   "method": "learned",
+   "model": "gbdt_q_ef512_c400",
+   "kind": "gbdt",
+   "use_query": true,
+   "ef_max": 512,
+   "checkpoint": 400,
+   "target": 0.95,
+   "multiplier": 1.103299218423826,
+   "val_r2_log": 0.6508941730161808,
+   "recall": 0.95,
+   "evals": 894.8622
+  },
+  {
+   "method": "learned",
+   "model": "gbdt_q_ef512_c400",
+   "kind": "gbdt",
+   "use_query": true,
+   "ef_max": 512,
+   "checkpoint": 400,
+   "target": 0.99,
+   "multiplier": 2.256415566079487,
+   "val_r2_log": 0.6508941730161808,
+   "recall": 0.99,
+   "evals": 1767.4506
+  }
+ ],
+ "val_runs": [
+  {
+   "name": "fixed_ef10",
+   "recall": 0.71214,
+   "recall_tie": 0.7129,
+   "evals": 273.657
+  },
+  {
+   "name": "fixed_ef12",
+   "recall": 0.7472200000000001,
+   "recall_tie": 0.7479399999999999,
+   "evals": 309.4372
+  },
+  {
+   "name": "fixed_ef14",
+   "recall": 0.7760600000000001,
+   "recall_tie": 0.7768200000000001,
+   "evals": 344.0852
+  },
+  {
+   "name": "fixed_ef16",
+   "recall": 0.8024399999999999,
+   "recall_tie": 0.8032,
+   "evals": 378.8046
+  },
+  {
+   "name": "fixed_ef20",
+   "recall": 0.8422,
+   "recall_tie": 0.84296,
+   "evals": 445.5608
+  },
+  {
+   "name": "fixed_ef24",
+   "recall": 0.8682400000000001,
+   "recall_tie": 0.8689600000000001,
+   "evals": 510.512
+  },
+  {
+   "name": "fixed_ef28",
+   "recall": 0.8894799999999999,
+   "recall_tie": 0.8901800000000001,
+   "evals": 574.5632
+  },
+  {
+   "name": "fixed_ef32",
+   "recall": 0.9051199999999999,
+   "recall_tie": 0.90586,
+   "evals": 637.6194
+  },
+  {
+   "name": "fixed_ef40",
+   "recall": 0.92816,
+   "recall_tie": 0.9288,
+   "evals": 762.2894
+  },
+  {
+   "name": "fixed_ef48",
+   "recall": 0.94366,
+   "recall_tie": 0.9441799999999999,
+   "evals": 884.073
+  },
+  {
+   "name": "fixed_ef56",
+   "recall": 0.9544600000000001,
+   "recall_tie": 0.9548600000000003,
+   "evals": 1005.2738
+  },
+  {
+   "name": "fixed_ef64",
+   "recall": 0.9631,
+   "recall_tie": 0.9635,
+   "evals": 1124.2868
+  },
+  {
+   "name": "fixed_ef80",
+   "recall": 0.9748,
+   "recall_tie": 0.9750800000000001,
+   "evals": 1357.8016
+  },
+  {
+   "name": "fixed_ef96",
+   "recall": 0.9818600000000002,
+   "recall_tie": 0.9821,
+   "evals": 1584.3708
+  },
+  {
+   "name": "fixed_ef112",
+   "recall": 0.9865,
+   "recall_tie": 0.9866400000000002,
+   "evals": 1804.854
+  },
+  {
+   "name": "fixed_ef128",
+   "recall": 0.9898600000000001,
+   "recall_tie": 0.9899600000000001,
+   "evals": 2021.044
+  },
+  {
+   "name": "fixed_ef160",
+   "recall": 0.9935799999999999,
+   "recall_tie": 0.99366,
+   "evals": 2441.4472
+  },
+  {
+   "name": "fixed_ef192",
+   "recall": 0.9958,
+   "recall_tie": 0.99582,
+   "evals": 2846.074
+  },
+  {
+   "name": "fixed_ef256",
+   "recall": 0.9979599999999998,
+   "recall_tie": 0.99798,
+   "evals": 3619.9398
+  },
+  {
+   "name": "fixed_ef320",
+   "recall": 0.99882,
+   "recall_tie": 0.99884,
+   "evals": 4356.5768
+  },
+  {
+   "name": "fixed_ef384",
+   "recall": 0.9993400000000001,
+   "recall_tie": 0.9993400000000001,
+   "evals": 5060.5256
+  },
+  {
+   "name": "fixed_ef512",
+   "recall": 0.99974,
+   "recall_tie": 0.99974,
+   "evals": 6397.08
+  },
+  {
+   "name": "pat_ef64_n2",
+   "recall": 0.65176,
+   "recall_tie": 0.6523200000000001,
+   "evals": 232.9378
+  },
+  {
+   "name": "pat_ef64_n3",
+   "recall": 0.7199,
+   "recall_tie": 0.7205799999999999,
+   "evals": 287.6316
+  },
+  {
+   "name": "pat_ef64_n4",
+   "recall": 0.7672800000000001,
+   "recall_tie": 0.7680400000000001,
+   "evals": 335.588
+  },
+  {
+   "name": "pat_ef64_n6",
+   "recall": 0.8240200000000001,
+   "recall_tie": 0.82484,
+   "evals": 417.714
+  },
+  {
+   "name": "pat_ef64_n8",
+   "recall": 0.8605799999999999,
+   "recall_tie": 0.8614,
+   "evals": 491.4216
+  },
+  {
+   "name": "pat_ef64_n10",
+   "recall": 0.88394,
+   "recall_tie": 0.88476,
+   "evals": 555.9466
+  },
+  {
+   "name": "pat_ef64_n12",
+   "recall": 0.9041799999999999,
+   "recall_tie": 0.9049,
+   "evals": 620.3092
+  },
+  {
+   "name": "pat_ef64_n16",
+   "recall": 0.92716,
+   "recall_tie": 0.9278200000000001,
+   "evals": 729.285
+  },
+  {
+   "name": "pat_ef64_n20",
+   "recall": 0.94032,
+   "recall_tie": 0.9409200000000001,
+   "evals": 818.6806
+  },
+  {
+   "name": "pat_ef64_n25",
+   "recall": 0.95068,
+   "recall_tie": 0.9512200000000001,
+   "evals": 908.6828
+  },
+  {
+   "name": "pat_ef64_n30",
+   "recall": 0.9562800000000001,
+   "recall_tie": 0.9568,
+   "evals": 976.1136
+  },
+  {
+   "name": "pat_ef64_n40",
+   "recall": 0.9616800000000001,
+   "recall_tie": 0.9621200000000001,
+   "evals": 1066.197
+  },
+  {
+   "name": "pat_ef64_n50",
+   "recall": 0.9629200000000001,
+   "recall_tie": 0.9633200000000001,
+   "evals": 1112.4896
+  },
+  {
+   "name": "pat_ef64_n65",
+   "recall": 0.9631,
+   "recall_tie": 0.9635,
+   "evals": 1124.2868
+  },
+  {
+   "name": "pat_ef64_n80",
+   "recall": 0.9631,
+   "recall_tie": 0.9635,
+   "evals": 1124.2868
+  },
+  {
+   "name": "pat_ef128_n2",
+   "recall": 0.65176,
+   "recall_tie": 0.6523200000000001,
+   "evals": 232.9378
+  },
+  {
+   "name": "pat_ef128_n3",
+   "recall": 0.7199,
+   "recall_tie": 0.7205799999999999,
+   "evals": 287.6316
+  },
+  {
+   "name": "pat_ef128_n4",
+   "recall": 0.7672800000000001,
+   "recall_tie": 0.7680400000000001,
+   "evals": 335.588
+  },
+  {
+   "name": "pat_ef128_n6",
+   "recall": 0.8240200000000001,
+   "recall_tie": 0.82484,
+   "evals": 417.714
+  },
+  {
+   "name": "pat_ef128_n8",
+   "recall": 0.8606799999999999,
+   "recall_tie": 0.8615,
+   "evals": 491.5148
+  },
+  {
+   "name": "pat_ef128_n10",
+   "recall": 0.88408,
+   "recall_tie": 0.8849,
+   "evals": 556.1864
+  },
+  {
+   "name": "pat_ef128_n12",
+   "recall": 0.9044200000000001,
+   "recall_tie": 0.9051400000000002,
+   "evals": 621.2992
+  },
+  {
+   "name": "pat_ef128_n16",
+   "recall": 0.92822,
+   "recall_tie": 0.9288799999999999,
+   "evals": 735.4098
+  },
+  {
+   "name": "pat_ef128_n20",
+   "recall": 0.9431,
+   "recall_tie": 0.9436800000000001,
+   "evals": 838.2576
+  },
+  {
+   "name": "pat_ef128_n25",
+   "recall": 0.9555800000000001,
+   "recall_tie": 0.9561000000000002,
+   "evals": 956.1574
+  },
+  {
+   "name": "pat_ef128_n30",
+   "recall": 0.964,
+   "recall_tie": 0.9645,
+   "evals": 1063.9376
+  },
+  {
+   "name": "pat_ef128_n40",
+   "recall": 0.9758,
+   "recall_tie": 0.9761800000000002,
+   "evals": 1264.1644
+  },
+  {
+   "name": "pat_ef128_n50",
+   "recall": 0.98146,
+   "recall_tie": 0.9816799999999999,
+   "evals": 1432.4048
+  },
+  {
+   "name": "pat_ef128_n65",
+   "recall": 0.986,
+   "recall_tie": 0.98618,
+   "evals": 1640.0528
+  },
+  {
+   "name": "pat_ef128_n80",
+   "recall": 0.9883200000000001,
+   "recall_tie": 0.9884400000000001,
+   "evals": 1802.5518
+  },
+  {
+   "name": "pat_ef256_n2",
+   "recall": 0.65176,
+   "recall_tie": 0.6523200000000001,
+   "evals": 232.9378
+  },
+  {
+   "name": "pat_ef256_n3",
+   "recall": 0.7199,
+   "recall_tie": 0.7205799999999999,
+   "evals": 287.6316
+  },
+  {
+   "name": "pat_ef256_n4",
+   "recall": 0.7672800000000001,
+   "recall_tie": 0.7680400000000001,
+   "evals": 335.588
+  },
+  {
+   "name": "pat_ef256_n6",
+   "recall": 0.8240200000000001,
+   "recall_tie": 0.82484,
+   "evals": 417.714
+  },
+  {
+   "name": "pat_ef256_n8",
+   "recall": 0.8606799999999999,
+   "recall_tie": 0.8615,
+   "evals": 491.5148
+  },
+  {
+   "name": "pat_ef256_n10",
+   "recall": 0.88408,
+   "recall_tie": 0.8849,
+   "evals": 556.1864
+  },
+  {
+   "name": "pat_ef256_n12",
+   "recall": 0.9044200000000001,
+   "recall_tie": 0.9051400000000002,
+   "evals": 621.2992
+  },
+  {
+   "name": "pat_ef256_n16",
+   "recall": 0.92822,
+   "recall_tie": 0.9288799999999999,
+   "evals": 735.4098
+  },
+  {
+   "name": "pat_ef256_n20",
+   "recall": 0.9431,
+   "recall_tie": 0.9436800000000001,
+   "evals": 838.3576
+  },
+  {
+   "name": "pat_ef256_n25",
+   "recall": 0.9555800000000001,
+   "recall_tie": 0.9561000000000002,
+   "evals": 956.4134
+  },
+  {
+   "name": "pat_ef256_n30",
+   "recall": 0.96404,
+   "recall_tie": 0.9645400000000002,
+   "evals": 1065.0566
+  },
+  {
+   "name": "pat_ef256_n40",
+   "recall": 0.9760200000000001,
+   "recall_tie": 0.9764,
+   "evals": 1271.3684
+  },
+  {
+   "name": "pat_ef256_n50",
+   "recall": 0.982,
+   "recall_tie": 0.9822200000000001,
+   "evals": 1454.7214
+  },
+  {
+   "name": "pat_ef256_n65",
+   "recall": 0.98744,
+   "recall_tie": 0.98762,
+   "evals": 1709.6772
+  },
+  {
+   "name": "pat_ef256_n80",
+   "recall": 0.9908400000000002,
+   "recall_tie": 0.9909600000000001,
+   "evals": 1948.9102
+  },
+  {
+   "name": "pat_ef512_n2",
+   "recall": 0.65176,
+   "recall_tie": 0.6523200000000001,
+   "evals": 232.9378
+  },
+  {
+   "name": "pat_ef512_n3",
+   "recall": 0.7199,
+   "recall_tie": 0.7205799999999999,
+   "evals": 287.6316
+  },
+  {
+   "name": "pat_ef512_n4",
+   "recall": 0.7672800000000001,
+   "recall_tie": 0.7680400000000001,
+   "evals": 335.588
+  },
+  {
+   "name": "pat_ef512_n6",
+   "recall": 0.8240200000000001,
+   "recall_tie": 0.82484,
+   "evals": 417.714
+  },
+  {
+   "name": "pat_ef512_n8",
+   "recall": 0.8606799999999999,
+   "recall_tie": 0.8615,
+   "evals": 491.5148
+  },
+  {
+   "name": "pat_ef512_n10",
+   "recall": 0.88408,
+   "recall_tie": 0.8849,
+   "evals": 556.1864
+  },
+  {
+   "name": "pat_ef512_n12",
+   "recall": 0.9044200000000001,
+   "recall_tie": 0.9051400000000002,
+   "evals": 621.2992
+  },
+  {
+   "name": "pat_ef512_n16",
+   "recall": 0.92822,
+   "recall_tie": 0.9288799999999999,
+   "evals": 735.4098
+  },
+  {
+   "name": "pat_ef512_n20",
+   "recall": 0.9431,
+   "recall_tie": 0.9436800000000001,
+   "evals": 838.3576
+  },
+  {
+   "name": "pat_ef512_n25",
+   "recall": 0.9555800000000001,
+   "recall_tie": 0.9561000000000002,
+   "evals": 956.4134
+  },
+  {
+   "name": "pat_ef512_n30",
+   "recall": 0.96404,
+   "recall_tie": 0.9645400000000002,
+   "evals": 1065.0566
+  },
+  {
+   "name": "pat_ef512_n40",
+   "recall": 0.9760200000000001,
+   "recall_tie": 0.9764,
+   "evals": 1271.3684
+  },
+  {
+   "name": "pat_ef512_n50",
+   "recall": 0.982,
+   "recall_tie": 0.9822200000000001,
+   "evals": 1454.7214
+  },
+  {
+   "name": "pat_ef512_n65",
+   "recall": 0.98744,
+   "recall_tie": 0.98762,
+   "evals": 1709.6882
+  },
+  {
+   "name": "pat_ef512_n80",
+   "recall": 0.9908400000000002,
+   "recall_tie": 0.9909600000000001,
+   "evals": 1949.8758
+  }
+ ]
+}
