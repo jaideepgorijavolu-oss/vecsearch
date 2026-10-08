@@ -39,8 +39,8 @@ TerminationModel parse(const std::string& text) {
 TerminationModel constant_model(double evals, std::size_t checkpoint) {
   std::ostringstream s;
   s.precision(17);
-  s << "vecsearch-termination-model 1 kind linear checkpoint " << checkpoint
-    << " query_dim 0 bias " << std::log(evals) << " weights " << kNumTerminationFeatures;
+  s << "vecsearch-termination-model 1 kind linear checkpoint " << checkpoint << " query_dim 0 bias "
+    << std::log(evals) << " weights " << kNumTerminationFeatures;
   for (std::size_t i = 0; i < kNumTerminationFeatures; ++i) s << " 0";
   s << " end";
   return parse(s.str());
@@ -105,10 +105,12 @@ TEST(Adaptive, BudgetIsPrefixOfFullRun) {
 TEST(Adaptive, PatienceStopsEarlyAndHugePatienceChangesNothing) {
   auto& f = fixture();
   std::vector<AdaptiveStats> full(kQ), p1(kQ), big(kQ);
-  const auto a = f.index.search_adaptive(f.queries.data(), kQ, kK, {.ef = kEf}, full.data(), nullptr, 1);
-  f.index.search_adaptive(f.queries.data(), kQ, kK, {.ef = kEf, .patience = 1}, p1.data(), nullptr, 1);
-  const auto c = f.index.search_adaptive(f.queries.data(), kQ, kK, {.ef = kEf, .patience = 1u << 30},
-                                         big.data(), nullptr, 1);
+  const auto a =
+      f.index.search_adaptive(f.queries.data(), kQ, kK, {.ef = kEf}, full.data(), nullptr, 1);
+  f.index.search_adaptive(f.queries.data(), kQ, kK, {.ef = kEf, .patience = 1}, p1.data(), nullptr,
+                          1);
+  const auto c = f.index.search_adaptive(f.queries.data(), kQ, kK,
+                                         {.ef = kEf, .patience = 1u << 30}, big.data(), nullptr, 1);
   EXPECT_EQ(a.ids, c.ids);
   std::size_t stopped = 0;
   for (std::size_t q = 0; q < kQ; ++q) {
@@ -148,7 +150,8 @@ TEST(Adaptive, ModelSetsBudgetAndScalesWithMultiplier) {
     std::vector<AdaptiveStats> full(kQ), st(kQ);
     f.index.search_adaptive(f.queries.data(), kQ, kK, {.ef = 256}, full.data(), nullptr, 1);
     f.index.search_adaptive(f.queries.data(), kQ, kK,
-                            {.ef = 256, .model = &model, .multiplier = mult}, st.data(), nullptr, 1);
+                            {.ef = 256, .model = &model, .multiplier = mult}, st.data(), nullptr,
+                            1);
     const auto budget = static_cast<std::uint32_t>(std::ceil(200 * mult - 1e-9));
     for (std::size_t q = 0; q < kQ; ++q) {
       ASSERT_TRUE(st[q].model_used);
@@ -164,8 +167,8 @@ TEST(Adaptive, ZeroDistanceFallsBackToPlainSearch) {
   std::vector<float> q(f.base.begin(), f.base.begin() + 5 * kDim);
   const auto model = constant_model(20, 30);
   std::vector<AdaptiveStats> st(5);
-  const auto r = f.index.search_adaptive(q.data(), 5, kK, {.ef = kEf, .model = &model}, st.data(),
-                                         nullptr, 1);
+  const auto r =
+      f.index.search_adaptive(q.data(), 5, kK, {.ef = kEf, .model = &model}, st.data(), nullptr, 1);
   const auto plain = f.index.search(q.data(), 5, kK, kEf, 1);
   EXPECT_EQ(r.ids, plain.ids);
   for (const auto& s : st) {
@@ -237,20 +240,23 @@ TEST(TerminationModel, LinearUsesQueryVector) {
 }
 
 TEST(TerminationModel, RejectsMalformedFiles) {
-  const std::string head = "vecsearch-termination-model 1 kind gbdt checkpoint 7 query_dim 0 bias 0 ";
-  for (const std::string& bad : std::vector<std::string>{
-           "",
-           "vecsearch-termination-model 2 kind linear",                 // future version
-           "vecsearch-termination-model 1 kind forest checkpoint 1",    // unknown kind
-           "vecsearch-termination-model 1 kind linear checkpoint 0 query_dim 0 bias 0 weights 0 end",
-           "vecsearch-termination-model 1 kind linear checkpoint 3 query_dim 0 bias 0 weights 2 1 1 end",
-           head + "trees 1 nodes 3  0 1 0 2 0  -1 0 0 0 1  -1 0 0 0 1 end",   // child loops to itself
-           head + "trees 1 nodes 3  0 1 1 5 0  -1 0 0 0 1  -1 0 0 0 1 end",   // child out of range
-           head + "trees 1 nodes 3  99 1 1 2 0  -1 0 0 0 1  -1 0 0 0 1 end",  // bad feature
-           head + "trees 1 nodes 3  0 nan 1 2 0  -1 0 0 0 1  -1 0 0 0 1 end", // NaN threshold
-           head + "trees 1 nodes 1  -1 0 0 0 inf end",                        // non-finite leaf
-           head + "trees 1 nodes 3  0 1 1 2 0  -1 0 0 0 1",                   // truncated
-       }) {
+  const std::string head =
+      "vecsearch-termination-model 1 kind gbdt checkpoint 7 query_dim 0 bias 0 ";
+  for (
+      const std::string& bad : std::vector<std::string>{
+          "",
+          "vecsearch-termination-model 2 kind linear",               // future version
+          "vecsearch-termination-model 1 kind forest checkpoint 1",  // unknown kind
+          "vecsearch-termination-model 1 kind linear checkpoint 0 query_dim 0 bias 0 weights 0 end",
+          "vecsearch-termination-model 1 kind linear checkpoint 3 query_dim 0 bias 0 weights 2 1 1 "
+          "end",
+          head + "trees 1 nodes 3  0 1 0 2 0  -1 0 0 0 1  -1 0 0 0 1 end",  // child loops to itself
+          head + "trees 1 nodes 3  0 1 1 5 0  -1 0 0 0 1  -1 0 0 0 1 end",  // child out of range
+          head + "trees 1 nodes 3  99 1 1 2 0  -1 0 0 0 1  -1 0 0 0 1 end",   // bad feature
+          head + "trees 1 nodes 3  0 nan 1 2 0  -1 0 0 0 1  -1 0 0 0 1 end",  // NaN threshold
+          head + "trees 1 nodes 1  -1 0 0 0 inf end",                         // non-finite leaf
+          head + "trees 1 nodes 3  0 1 1 2 0  -1 0 0 0 1",                    // truncated
+      }) {
     EXPECT_THROW(parse(bad), std::runtime_error) << bad;
   }
 }

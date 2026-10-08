@@ -73,8 +73,9 @@ int build(char** a) {
   const auto t0 = Clock::now();
   HnswIndex index(base.dim, Metric::L2, p);
   index.add(base.data.data(), base.n, nullptr, 1);
-  std::printf("{\"build_seconds\": %.6f, \"threads\": 1, \"max_level\": %d, \"memory_bytes\": %zu}\n",
-              seconds_since(t0), index.max_level(), index.memory_bytes());
+  std::printf(
+      "{\"build_seconds\": %.6f, \"threads\": 1, \"max_level\": %d, \"memory_bytes\": %zu}\n",
+      seconds_since(t0), index.max_level(), index.memory_bytes());
   index.save(a[1]);
   return 0;
 }
@@ -155,8 +156,10 @@ int run(char** a) {
     if (line.empty() || line[0] == '#') continue;
     std::istringstream ls(line);
     Config c;
-    ls >> c.name >> c.kind >> c.p.ef >> c.p.max_evals >> c.p.patience >> c.model_path >> c.p.multiplier;
-    if (!ls || (c.kind != "fixed" && c.kind != "adaptive")) throw std::runtime_error("bad config: " + line);
+    ls >> c.name >> c.kind >> c.p.ef >> c.p.max_evals >> c.p.patience >> c.model_path >>
+        c.p.multiplier;
+    if (!ls || (c.kind != "fixed" && c.kind != "adaptive"))
+      throw std::runtime_error("bad config: " + line);
     if (c.model_path != "-") {
       c.model = std::make_unique<TerminationModel>(TerminationModel::load(c.model_path));
       c.p.model = c.model.get();
@@ -179,21 +182,25 @@ int run(char** a) {
       for (std::size_t i = 0; i < nq; ++i) {
         const float* x = q.data.data() + i * q.dim;
         const auto t0 = Clock::now();
-        const SearchResult r = c.kind == "fixed"
-                                   ? index->search(x, 1, kK, c.p.ef, 1)
-                                   : index->search_adaptive(x, 1, kK, c.p, &stats[ci][i], nullptr, 1);
-        const auto ns = std::chrono::duration_cast<std::chrono::nanoseconds>(Clock::now() - t0).count();
+        const SearchResult r =
+            c.kind == "fixed" ? index->search(x, 1, kK, c.p.ef, 1)
+                              : index->search_adaptive(x, 1, kK, c.p, &stats[ci][i], nullptr, 1);
+        const auto ns =
+            std::chrono::duration_cast<std::chrono::nanoseconds>(Clock::now() - t0).count();
         std::copy(r.ids.begin(), r.ids.end(), got.begin() + i * kK);
         if (pass > 0) lat[ci][(pass - 1) * nq + i] = ns;
       }
-      if (pass == 0) ids[ci] = got;
-      else if (got != ids[ci]) throw std::runtime_error("non-deterministic results: " + c.name);
+      if (pass == 0)
+        ids[ci] = got;
+      else if (got != ids[ci])
+        throw std::runtime_error("non-deterministic results: " + c.name);
     }
     std::fprintf(stderr, "pass %zu/%zu done\n", pass, passes);
   }
   for (std::size_t ci = 0; ci < nc; ++ci) {
     const auto base = dir / configs[ci].name;
-    std::ofstream o1(base.string() + ".ids", std::ios::binary), o2(base.string() + ".lat", std::ios::binary),
+    std::ofstream o1(base.string() + ".ids", std::ios::binary),
+        o2(base.string() + ".lat", std::ios::binary),
         o3(base.string() + ".stats", std::ios::binary);
     put(o1, ids[ci]);
     put(o2, lat[ci]);
@@ -220,9 +227,12 @@ int overhead(char** a) {
   double sink = 0;
   const auto t0 = Clock::now();
   for (std::size_t r = 0; r < reps; ++r)
-    for (std::size_t i = 0; i < n; ++i) sink += model.predict_log_evals(&feats[i * width], &feats[i * width + kNumTerminationFeatures]);
+    for (std::size_t i = 0; i < n; ++i)
+      sink +=
+          model.predict_log_evals(&feats[i * width], &feats[i * width + kNumTerminationFeatures]);
   const double ns = seconds_since(t0) * 1e9 / double(n * reps);
-  std::printf("{\"predict_ns\": %.3f, \"n\": %zu, \"reps\": %zu, \"checksum\": %.6f}\n", ns, n, reps, sink);
+  std::printf("{\"predict_ns\": %.3f, \"n\": %zu, \"reps\": %zu, \"checksum\": %.6f}\n", ns, n,
+              reps, sink);
   return 0;
 }
 

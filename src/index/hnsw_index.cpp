@@ -336,7 +336,8 @@ void HnswIndex::search_layer_adaptive(const float* q, std::uint32_t ep, std::siz
   // happen (the checkpoint or the budget).
   std::size_t evals = 0;
   std::size_t budget = p.max_evals != 0 ? p.max_evals : kNever;
-  std::size_t checkpoint = model ? model->checkpoint() : (p.checkpoint != 0 ? p.checkpoint : kNever);
+  std::size_t checkpoint =
+      model ? model->checkpoint() : (p.checkpoint != 0 ? p.checkpoint : kNever);
   std::size_t next_event = std::min(budget, checkpoint);
   std::size_t last_change = 0, changes = 0, stale_expansions = 0;
   bool changed = false;  // the top-k changed during the current expansion
@@ -375,8 +376,8 @@ void HnswIndex::search_layer_adaptive(const float* q, std::uint32_t ep, std::siz
         f[kCandidateOverKth] = cand / dk;
         f[kStaleFraction] = float(evals - last_change) / float(evals);
         f[kTopkChanges] = float(changes);
-        st.features_valid = std::all_of(f, f + kNumTerminationFeatures,
-                                        [](float x) { return std::isfinite(x); });
+        st.features_valid =
+            std::all_of(f, f + kNumTerminationFeatures, [](float x) { return std::isfinite(x); });
       }
       // Invalid features (e.g. a zero distance) fall back to the plain ef search.
       if (st.features_valid && model) {
@@ -466,7 +467,8 @@ void HnswIndex::search_layer_adaptive(const float* q, std::uint32_t ep, std::siz
     }
   }
   st.evals = static_cast<std::uint32_t>(evals);
-  st.budget = budget == kNever ? 0 : static_cast<std::uint32_t>(std::min<std::size_t>(budget, UINT32_MAX));
+  st.budget =
+      budget == kNever ? 0 : static_cast<std::uint32_t>(std::min<std::size_t>(budget, UINT32_MAX));
 }
 
 void HnswIndex::select_neighbors(std::vector<Cand>& candidates, std::size_t m) const {
@@ -604,8 +606,8 @@ SearchResult HnswIndex::search_adaptive(const float* queries, std::size_t nq, st
     AdaptiveStats st;
     std::vector<TopkEvent>* ev = events ? &(*events)[qi] : nullptr;
     if (num_deleted_ > 0) {
-      search_layer_adaptive(q, ep, k, p, model, s,
-                            [&](std::uint32_t id) { return deleted_[id] == 0; }, st, ev);
+      search_layer_adaptive(
+          q, ep, k, p, model, s, [&](std::uint32_t id) { return deleted_[id] == 0; }, st, ev);
     } else {
       search_layer_adaptive(q, ep, k, p, model, s, AcceptAll{}, st, ev);
     }

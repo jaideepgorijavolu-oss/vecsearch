@@ -34,9 +34,9 @@ struct HnswParams {
 // of layer-0 distance evaluations, or `patience` expansions in a row that did not change the
 // top-k. The budget is max_evals, or, with a model, max(checkpoint, multiplier * predicted).
 struct AdaptiveParams {
-  std::size_t ef = 0;          // beam width (0 = ef_search()); at least k
-  std::size_t max_evals = 0;   // fixed budget of layer-0 distance evaluations (0 = none)
-  std::size_t patience = 0;    // expansions without a top-k change before stopping (0 = off)
+  std::size_t ef = 0;         // beam width (0 = ef_search()); at least k
+  std::size_t max_evals = 0;  // fixed budget of layer-0 distance evaluations (0 = none)
+  std::size_t patience = 0;   // expansions without a top-k change before stopping (0 = off)
   const TerminationModel* model = nullptr;  // learned budget (no deleted nodes only)
   double multiplier = 1.0;                  // scales the model's predicted budget
   std::size_t checkpoint = 0;  // without a model: record features at this many evaluations
