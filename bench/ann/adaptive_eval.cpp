@@ -4,7 +4,7 @@
 //   adaptive_eval gt       base.fbin queries.fbin k out.gt               (exact, FlatIndex)
 //   adaptive_eval trace    index.hnsw queries.fbin ef checkpoint out.trace
 //   adaptive_eval run      index.hnsw queries.fbin configs.txt passes out_dir
-//   adaptive_eval overhead model.txt features.f32 reps
+//   adaptive_eval overhead model.txt inputs.f32 reps   (rows: features, then the query if used)
 //
 // trace: one unbudgeted search per query (all threads) recording stats, the features at the
 // checkpoint and the top-k event log, from which recall at any budget is computed offline.
@@ -217,11 +217,10 @@ int overhead(char** a) {
   in.read(reinterpret_cast<char*>(feats.data()), feats.size() * sizeof(float));
   const std::size_t width = kNumTerminationFeatures + model.query_dim();
   const std::size_t n = feats.size() / width, reps = std::stoul(a[2]);
-  if (model.query_dim() != 0) throw std::runtime_error("overhead: query-vector models unsupported");
   double sink = 0;
   const auto t0 = Clock::now();
   for (std::size_t r = 0; r < reps; ++r)
-    for (std::size_t i = 0; i < n; ++i) sink += model.predict_log_evals(&feats[i * width], nullptr);
+    for (std::size_t i = 0; i < n; ++i) sink += model.predict_log_evals(&feats[i * width], &feats[i * width + kNumTerminationFeatures]);
   const double ns = seconds_since(t0) * 1e9 / double(n * reps);
   std::printf("{\"predict_ns\": %.3f, \"n\": %zu, \"reps\": %zu, \"checksum\": %.6f}\n", ns, n, reps, sink);
   return 0;

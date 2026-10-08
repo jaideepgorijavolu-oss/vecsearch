@@ -379,7 +379,7 @@ def stage_select(run_dir):
     for key, s in chosen.items():
         if key.startswith("learned"):
             confirm.append((key.replace("@", "_"), "adaptive", s["ef_max"], 0, 0,
-                            str(models_dir / f"{s['model']}.txt"), repr(s["multiplier"])))
+                            str(models_dir / f"{s['model']}.txt"), repr(float(s["multiplier"]))))
         elif key.startswith("cap"):
             confirm.append((key.replace("@", "_"), "adaptive", s["ef_max"], s["max_evals"], 0, "-", 1))
     real = run_configs(run_dir, "val_confirm", "val", confirm, 0, log)
@@ -412,7 +412,7 @@ def stage_test(run_dir):
             configs.append((name, "adaptive", s["ef_max"], s["max_evals"], 0, "-", 1))
         else:
             configs.append((name, "adaptive", s["ef_max"], 0, 0,
-                            str(run_dir / "models" / f"{s['model']}.txt"), repr(s["multiplier"])))
+                            str(run_dir / "models" / f"{s['model']}.txt"), repr(float(s["multiplier"]))))
     configs += [(f"evals_ef{ef}", "adaptive", ef, 0, 0, "-", 1) for ef in FIXED_EF]  # eval counts
     assert len({c[0] for c in configs}) == len(configs) and seen
     t0 = time.time()
@@ -485,10 +485,13 @@ def stage_report(run_dir):
     overhead = {}
     for r in TARGETS:
         s = sel.get(f"learned@{r}")
-        if s and not s["use_query"]:
+        if s:
             t = read_trace(trace_path("val", s["ef_max"], s["checkpoint"]))
             fpath = DATA / "val_features.f32"
-            t["features"][t["valid"]].astype(np.float32).tofile(fpath)
+            X = t["features"][t["valid"]]
+            if s["use_query"]:
+                X = np.hstack([X, read_fbin(fbin("val"))[t["valid"]]])
+            X.astype(np.float32).tofile(fpath)
             out = subprocess.run([TOOL, "overhead", str(run_dir / "models" / f"{s['model']}.txt"),
                                   str(fpath), "20"], capture_output=True, text=True, check=True)
             overhead[s["model"]] = json.loads(out.stdout)
@@ -527,6 +530,58 @@ def stage_report(run_dir):
     print("\n".join(lines))
 
 
+def stage_stress(run_dir):
+    """Predefined stress condition: the same policies on a rebuilt index (graph seed 101), no
+    retraining or recalibration. Recall and distance evaluations from traces (exact, as checked
+    on val); no timing."""
+    log = run_dir / "stress.log"
+    idx = DATA / "sift_m16_efc200_s101.hnsw"
+    if not idx.exists():
+        sh([TOOL, "build", str(fbin("base")), str(idx), "16", "200", "101"], log)
+    sel = json.loads((run_dir / "selection.json").read_text())["chosen"]
+    gt_ids, _ = read_gt("test")
+    Qt = read_fbin(fbin("test"))
+    out = {"index_sha256": sha256(idx)}
+    for r in TARGETS:
+        for method in ["learned", "cap"]:
+            s = sel.get(f"{method}@{r}")
+            c = s.get("checkpoint", CHECKPOINTS[0])
+            p = DATA / "traces" / f"stress_test_ef{s['ef_max']}_c{c}.trace"
+            if not p.exists():
+                sh([TOOL, "trace", str(idx), str(fbin("test")), str(s["ef_max"]), str(c), str(p)], log)
+            t = read_trace(p)
+            e, tot = entry_evals(t, gt_ids), t["evals"].astype(float)
+            if method == "cap":
+                budget = np.full(len(tot), s["max_evals"])
+            else:
+                text = (run_dir / "models" / f"{s['model']}.txt").read_text().split()
+                m = parse_model(text)
+                pv = np.where(t["valid"], predict(m, t["features"], Qt if s["use_query"] else None), 0)
+                budget = learned_budget(pv, t["valid"], tot, c, s["multiplier"])
+            rec, ev = simulate(e, tot, budget)
+            out[f"{method}@{r}"] = {"recall": rec.mean(), "evals": ev.mean()}
+    (run_dir / "stress.json").write_text(json.dumps(out, indent=1, default=float))
+    print(json.dumps(out, indent=1, default=float))
+
+
+def parse_model(tok):
+    i = tok.index("bias")
+    kind = tok[tok.index("kind") + 1]
+    m = {"kind": kind, "bias": float(tok[i + 1])}
+    if kind == "linear":
+        n = int(tok[i + 3])
+        m["weights"] = [float(x) for x in tok[i + 4:i + 4 + n]]
+        return m
+    j, trees = i + 4, []
+    for _ in range(int(tok[i + 3])):
+        n = int(tok[j + 1]); j += 2
+        trees.append([(int(tok[j + 5 * a]), float(tok[j + 5 * a + 1]), int(tok[j + 5 * a + 2]),
+                       int(tok[j + 5 * a + 3]), float(tok[j + 5 * a + 4])) for a in range(n)])
+        j += 5 * n
+    m["trees"] = trees
+    return m
+
+
 def environment(run_dir):
     def cmd(c):
         try:
@@ -545,4 +600,5 @@ def environment(run_dir):
 if __name__ == "__main__":
     stage, run_dir = sys.argv[1], pathlib.Path(sys.argv[2])
     run_dir.mkdir(parents=True, exist_ok=True)
-    {"traces": stage_traces, "select": stage_select, "test": stage_test, "report": stage_report}[stage](run_dir)
+    {"traces": stage_traces, "select": stage_select, "test": stage_test, "report": stage_report,
+     "stress": stage_stress}[stage](run_dir)
