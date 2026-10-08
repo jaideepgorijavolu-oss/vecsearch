@@ -1,0 +1,33 @@
+{
+ "identical": [
+  "learn/ef512/c250",
+  "learn/ef512/c500",
+  "learn/ef512/c1000",
+  "learn/ef1024/c250",
+  "learn/ef1024/c500",
+  "learn/ef1024/c1000",
+  "learn/ef2048/c250",
+  "learn/ef2048/c500",
+  "learn/ef2048/c1000",
+  "val/ef512/c250",
+  "val/ef512/c500",
+  "val/ef512/c1000",
+  "val/ef1024/c250",
+  "val/ef1024/c500",
+  "val/ef1024/c1000",
+  "val/ef2048/c250",
+  "val/ef2048/c500",
+  "val/ef2048/c1000",
+  "test/ef512/c250",
+  "test/ef512/c500",
+  "test/ef512/c1000",
+  "test/ef1024/c250",
+  "test/ef1024/c500",
+  "test/ef1024/c1000",
+  "test/ef2048/c250",
+  "test/ef2048/c500",
+  "test/ef2048/c1000"
+ ],
+ "missing_legacy": [],
+ "raw_dir": "/data/adaptive/runs_by_id/glove_v1"
+}

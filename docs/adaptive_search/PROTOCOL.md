@@ -169,3 +169,31 @@ Extension after the SIFT results: GloVe-100 and multithreaded runs.
   threads, best of 5 runs, results checked equal to the single-thread ones. This measures
   throughput, not latency.
 - No stress condition for GloVe (the SIFT rebuilt-graph check is the predefined one).
+
+**A4 (2026-10-07, after an external review of `main` at ed0c76e). Corrections; no new
+measurements, no retraining.**
+- R1, run isolation: the first scripts reused traces only because the file existed, and every
+  run shared one raw-output directory. A rebuilt index could therefore silently reuse old
+  traces, and runs could overwrite each other. Now:
+  - each run pins input hashes (`inputs.json`);
+  - traces are cached under a key over index, queries, search-code fingerprint, ef and
+    checkpoint, and are verified by hash on every read;
+  - raw outputs are per run;
+  - completed stages refuse to overwrite;
+  - the test stage records the measurement environment.
+
+  The two published runs were brought under these rules by `study.py adopt`. Every trace they
+  used was regenerated and is byte-identical to the original.
+- R2, GloVe classification: the earlier write-up called the 0.95 result a win under the
+  predeclared rule by comparing with fixed ef 768. The validation-selected comparator is ef 1024
+  (test recall 0.9566, against 0.9468), outside the 0.002 allowance, so the criterion is **not
+  met**. The ef 768 comparison stays, labeled as a descriptive reading of the measured test curve.
+- R3, reproduction: added the TEXMEX download with pinned hashes (`sources.json`) and audit
+  bundles (all per-pass timings, returned ids, stats, test ground truth, provenance). The report
+  stage now regenerates tables only from a bundle.
+- R4, fallback contract: when the model is ignored (deleted nodes, invalid features), explicit
+  `max_evals` / `patience` still apply. This is now documented and tested; published runs used
+  neither with a model.
+- Timeline note: the SIFT `selection.json` was produced before its test run but first committed
+  with the test outputs, so git does not prove it was frozen first. The GloVe selection was
+  committed before its test run.

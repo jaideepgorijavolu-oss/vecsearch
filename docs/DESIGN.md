@@ -169,8 +169,9 @@ path. It can stop at a fixed distance-evaluation budget, after N expansions with
 change (patience), or at a budget a `TerminationModel` predicts at a checkpoint (Li et al.,
 SIGMOD 2020). All rules hang off one comparison per distance evaluation against `next_event`.
 A small k-heap tracks the running top-k for features and patience. The model is immutable and
-shared across threads; per-query state lives in `Scratch`. Indexes with deleted nodes, or
-queries whose features are not finite, fall back to the plain ef search. Filters are not
+shared across threads; per-query state lives in `Scratch`. On indexes with deleted nodes, or for
+queries whose features are not finite, the model is ignored; explicit `max_evals` / `patience`
+still apply, so with neither set this is exactly the plain ef search. Filters are not
 supported. Results: [adaptive_search/RESULTS.md](adaptive_search/RESULTS.md).
 
 ## What was intentionally left out

@@ -8,8 +8,10 @@ with hand-written AVX2/NEON distance kernels and runtime CPU dispatch, multithre
 search, soft deletes and filtered search, zero-copy Python bindings, and a small FastAPI
 service. It is benchmarked against hnswlib and Faiss on SIFT1M and GloVe-100 with
 recall-vs-throughput curves. An experimental learned early-termination search (a small
-tree model that predicts each query's search budget) is 21% faster than fixed-ef search at
-~0.947 recall@10 on GloVe-100 and gives no latency gain on SIFT1M; see
+tree model that predicts each query's search budget) did not meet its predeclared
+matched-recall criterion. On GloVe-100's measured test curve it has 20.8% lower mean latency
+than fixed-ef search at ~0.947 recall@10 (worse tails), and on SIFT1M it gives no latency gain;
+see
 [docs/adaptive_search/RESULTS.md](docs/adaptive_search/RESULTS.md).
 
 ![SIFT1M recall vs QPS](bench/ann/results/sift_recall_qps.png)
@@ -113,4 +115,5 @@ MIT, see [LICENSE](LICENSE).
 - [docs/RESULTS.md](docs/RESULTS.md): hardware, methodology, all benchmark numbers.
 - [docs/LEARNING_LOG.md](docs/LEARNING_LOG.md): per-phase notes and interview questions.
 - [docs/adaptive_search/RESULTS.md](docs/adaptive_search/RESULTS.md): learned early termination
-  experiment (SIFT1M: no latency win; GloVe-100: 21% faster than fixed ef at ~0.947 recall).
+  experiment (SIFT1M: no latency gain; GloVe-100: criterion not met, 20.8% lower mean latency
+  than fixed ef 768 on the measured curve).

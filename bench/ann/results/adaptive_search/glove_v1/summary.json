@@ -614,18 +614,21 @@
   }
  },
  "model_overhead": {
-  "gbdt_q_ef512_c1000": {
-   "predict_ns": 4526.734,
-   "n": 5000,
-   "reps": 20,
-   "checksum": 742473.65815
+  "values": {
+   "gbdt_q_ef512_c1000": {
+    "predict_ns": 4526.734,
+    "n": 5000,
+    "reps": 20,
+    "checksum": 742473.65815
+   },
+   "gbdt_q_ef1024_c1000": {
+    "predict_ns": 4782.992,
+    "n": 5000,
+    "reps": 20,
+    "checksum": 762696.550979
+   }
   },
-  "gbdt_q_ef1024_c1000": {
-   "predict_ns": 4782.992,
-   "n": 5000,
-   "reps": 20,
-   "checksum": 762696.550979
-  }
+  "note": "Measured by the first report generation on the same machine, not by the test stage."
  },
  "selection": {
   "learned@0.8": {
@@ -734,7 +737,7 @@
    "evals": 16141.3444
   }
  },
- "environment": {
+ "measurement_environment": {
   "cpu": "AMD Ryzen 9 270 w/ Radeon 780M Graphics",
   "nproc": 16,
   "kernel": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
@@ -745,6 +748,17 @@
   "sklearn": "1.9.1",
   "git_commit": "f14c9f230a560e2815e5ef0a3f6e82cd7f64e8fa",
   "git_dirty": "3",
-  "index_sha256": "e5a7ca8addf699723ca6577877191fb98a09eff9266b48c0d4082c3c0789a840"
+  "index_sha256": "e5a7ca8addf699723ca6577877191fb98a09eff9266b48c0d4082c3c0789a840",
+  "note": "Legacy run: the test stage did not record its environment. Captured by the first report generation right after the timing run, on the same machine; git_commit is the commit checked out at that moment."
+ },
+ "bundle": {
+  "run_id": "glove_v1",
+  "meta_sha256": "bae3bb3bae64e0f9716fe59bdaea46da24a96bc776021da2ce51394f01281904",
+  "arrays_sha256": "1da5b59ac6ebd3cc25e86237cf10cf5cf4d3980299385a24641296a5732c027d"
+ },
+ "report_environment": {
+  "generated": "2026-10-08T05:00:05+0000",
+  "python": "3.12.3",
+  "numpy": "2.5.3"
  }
 }

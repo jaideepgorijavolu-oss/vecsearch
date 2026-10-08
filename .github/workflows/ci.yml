@@ -53,6 +53,21 @@ jobs:
           sudo sysctl vm.mmap_rnd_bits=28
           ctest --preset ${{ matrix.preset }}
 
+  adaptive-study:
+    # Run-isolation regression tests for the adaptive-search study (tiny synthetic data).
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: sudo apt-get update && sudo apt-get install -y ninja-build
+      - name: Build adaptive_eval
+        run: cmake --preset bench && cmake --build --preset bench --target adaptive_eval
+      - run: pip install numpy scikit-learn matplotlib pytest
+      - name: pytest
+        run: python -m pytest -q bench/ann/adaptive/test_study.py
+
   python:
     strategy:
       fail-fast: false

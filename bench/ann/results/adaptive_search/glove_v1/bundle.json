@@ -1,0 +1,8 @@
+{
+ "file": "glove_v1_audit_bundle.tar",
+ "sha256": "6dea6e880bb369754904137f1ffdacf82a3c30d0372178a2ca384c2b9cd3e297",
+ "bytes": 10618880,
+ "arrays_sha256": "1da5b59ac6ebd3cc25e86237cf10cf5cf4d3980299385a24641296a5732c027d",
+ "meta_sha256": "bae3bb3bae64e0f9716fe59bdaea46da24a96bc776021da2ce51394f01281904",
+ "release": "https://github.com/jaideepgorijavolu-oss/vecsearch/releases/tag/adaptive-search-data-v1"
+}

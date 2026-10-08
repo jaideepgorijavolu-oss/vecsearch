@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import pathlib
+import shutil
 import urllib.request
 
 import h5py
@@ -28,7 +29,10 @@ def download(name: str) -> pathlib.Path:
         path.parent.mkdir(parents=True, exist_ok=True)
         print(f"downloading {BASE_URL + fname} -> {path}")
         tmp = path.with_suffix(".part")
-        urllib.request.urlretrieve(BASE_URL + fname, tmp)
+        # ann-benchmarks.com answers 403 to Python's default User-Agent; any explicit one works.
+        req = urllib.request.Request(BASE_URL + fname, headers={"User-Agent": "vecsearch-bench/1.0"})
+        with urllib.request.urlopen(req) as r, open(tmp, "wb") as f:
+            shutil.copyfileobj(r, f, 1 << 24)
         tmp.rename(path)
     return path
 

@@ -1,0 +1,8 @@
+{
+ "file": "sift1m_v1_audit_bundle.tar",
+ "sha256": "d3914424786a3d96009b40679db68611a4890ed9e7d13d391757b51c2d1fc53b",
+ "bytes": 12789760,
+ "arrays_sha256": "a077bee60663d69d905cb7ca8d32d240e634f8383e03fb29bd098a5c4bb7ca7c",
+ "meta_sha256": "779e29ad230e9a7378e42afcf80043edbcdf550046595ea3ce163e7faba92f37",
+ "release": "https://github.com/jaideepgorijavolu-oss/vecsearch/releases/tag/adaptive-search-data-v1"
+}

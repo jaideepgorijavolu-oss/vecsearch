@@ -367,8 +367,10 @@ somewhere between 50% and 10% selectivity, so a real system should switch strate
 
 Methodology, tables and limitations: [adaptive_search/RESULTS.md](adaptive_search/RESULTS.md),
 pre-registered in [adaptive_search/PROTOCOL.md](adaptive_search/PROTOCOL.md). In short:
-- GloVe-100: 1,114 µs per query at recall@10 0.9468, vs fixed ef 768 at 1,406 µs and 0.9450
-  (single thread). Worse p95/p99. Loses at recall 0.80.
+- GloVe-100: the predeclared matched-recall criterion is not met (the validation-selected fixed
+  ef 1024 has 0.9566 recall vs 0.9468). Descriptively, on the measured test curve the policy takes
+  1,114 µs per query vs 1,406 µs for fixed ef 768 at 0.9450 (single thread), with worse p95/p99.
+  Slower at recall 0.80.
 - SIFT1M: 7–14% fewer distance evaluations at matched recall, no single-thread latency gain.
 
 These use new index snapshots built on one thread and reduced/split query sets, so they are not
@@ -387,7 +389,8 @@ comparable with the numbers above.
   FastAPI service with metadata-filtered search and strict input validation, sustaining ~990
   req/s with p99 29 ms at 16 concurrent clients (Eco-mode measurement).
 - Implemented learned early termination for HNSW search (following Li et al., SIGMOD 2020) with
-  a pre-registered, leakage-checked evaluation: 21% lower single-thread latency than fixed-ef
-  search at ~0.947 recall@10 on GloVe-100, and a documented negative result on SIFT1M (fewer
-  distance evaluations, no latency gain). Found 10,017 SIFT training vectors that duplicated
+  a pre-registered, leakage-checked evaluation on SIFT1M and GloVe-100. The policy did not meet
+  the predeclared matched-recall criterion. On GloVe's measured test curve it had 20.8% lower
+  mean latency than fixed ef 768 (0.9468 vs 0.9450 recall@10), with worse tail latency; SIFT1M is
+  a documented negative result (fewer distance evaluations, no latency gain). Found 10,017 SIFT training vectors that duplicated
   the test queries ([adaptive_search/RESULTS.md](adaptive_search/RESULTS.md)).
