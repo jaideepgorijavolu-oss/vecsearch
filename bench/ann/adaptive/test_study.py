@@ -153,3 +153,34 @@ def test_reports_read_only_their_own_bundle_and_keep_measurement_provenance(stud
     for stage in [study.stage_test, study.stage_bundle]:
         with pytest.raises(study.StudyError, match="exists"):
             stage(run_a)
+
+
+def test_changed_code_stops_every_resuming_stage(study, tmp_path, monkeypatch):
+    run = tmp_path / "run"
+    run.mkdir()
+    study.pin_inputs(run)
+    key = study.ensure_trace(study.INDEX, study.fbin("val"), 64, 20, tmp_path / "log")
+    study.record_trace(run, "val/ef64/c20", key)
+    study.write_json(run / "selection.json", {"chosen": {"fixed@0.9": {"name": "fixed_ef16"}}})
+    study.write_json(run / "models.sha256.json", {})
+
+    monkeypatch.setattr(study, "code_fingerprint", lambda: "a different search implementation")
+    for stage in [study.stage_traces, study.stage_select, study.stage_test, study.stage_mt,
+                  study.stage_stress]:
+        with pytest.raises(study.StudyError, match="search code changed"):
+            stage(run)
+    with pytest.raises(study.StudyError, match="different version of the search code"):
+        study.load_trace(run, "val/ef64/c20")
+    assert not study.runs_dir(run).exists()  # nothing was measured
+
+
+def test_line_endings_do_not_change_the_code_fingerprint(study, tmp_path, monkeypatch):
+    src = tmp_path / "src"
+    for rel in study.CODE_FILES:
+        (src / rel).parent.mkdir(parents=True, exist_ok=True)
+        (src / rel).write_bytes((study.ROOT / rel).read_bytes().replace(b"\r\n", b"\n"))
+    monkeypatch.setattr(study, "ROOT", src)
+    lf = study.code_fingerprint()
+    for rel in study.CODE_FILES:
+        (src / rel).write_bytes((src / rel).read_bytes().replace(b"\n", b"\r\n"))
+    assert study.code_fingerprint() == lf
