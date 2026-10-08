@@ -1,0 +1,54 @@
+{"cmd": ["build/bench/bench/ann/adaptive_eval", "trace", "/data/adaptive/glove_m16_efc200_s100.hnsw", "/data/adaptive/glove_learn.fbin", "512", "250", "/data/adaptive/traces_glove/learn_ef512_c250.trace"], "rc": 0, "seconds": 23.321484565734863}
+trace: 21.38 s
+{"cmd": ["build/bench/bench/ann/adaptive_eval", "trace", "/data/adaptive/glove_m16_efc200_s100.hnsw", "/data/adaptive/glove_learn.fbin", "512", "500", "/data/adaptive/traces_glove/learn_ef512_c500.trace"], "rc": 0, "seconds": 20.046051025390625}
+trace: 19.16 s
+{"cmd": ["build/bench/bench/ann/adaptive_eval", "trace", "/data/adaptive/glove_m16_efc200_s100.hnsw", "/data/adaptive/glove_learn.fbin", "512", "1000", "/data/adaptive/traces_glove/learn_ef512_c1000.trace"], "rc": 0, "seconds": 20.511210918426514}
+trace: 19.55 s
+{"cmd": ["build/bench/bench/ann/adaptive_eval", "trace", "/data/adaptive/glove_m16_efc200_s100.hnsw", "/data/adaptive/glove_learn.fbin", "1024", "250", "/data/adaptive/traces_glove/learn_ef1024_c250.trace"], "rc": 0, "seconds": 40.55846190452576}
+trace: 39.61 s
+{"cmd": ["build/bench/bench/ann/adaptive_eval", "trace", "/data/adaptive/glove_m16_efc200_s100.hnsw", "/data/adaptive/glove_learn.fbin", "1024", "500", "/data/adaptive/traces_glove/learn_ef1024_c500.trace"], "rc": 0, "seconds": 35.83748745918274}
+trace: 34.98 s
+{"cmd": ["build/bench/bench/ann/adaptive_eval", "trace", "/data/adaptive/glove_m16_efc200_s100.hnsw", "/data/adaptive/glove_learn.fbin", "1024", "1000", "/data/adaptive/traces_glove/learn_ef1024_c1000.trace"], "rc": 0, "seconds": 39.60050964355469}
+trace: 38.54 s
+{"cmd": ["build/bench/bench/ann/adaptive_eval", "trace", "/data/adaptive/glove_m16_efc200_s100.hnsw", "/data/adaptive/glove_learn.fbin", "2048", "250", "/data/adaptive/traces_glove/learn_ef2048_c250.trace"], "rc": 0, "seconds": 73.34344458580017}
+trace: 72.07 s
+{"cmd": ["build/bench/bench/ann/adaptive_eval", "trace", "/data/adaptive/glove_m16_efc200_s100.hnsw", "/data/adaptive/glove_learn.fbin", "2048", "500", "/data/adaptive/traces_glove/learn_ef2048_c500.trace"], "rc": 0, "seconds": 68.46382308006287}
+trace: 67.48 s
+{"cmd": ["build/bench/bench/ann/adaptive_eval", "trace", "/data/adaptive/glove_m16_efc200_s100.hnsw", "/data/adaptive/glove_learn.fbin", "2048", "1000", "/data/adaptive/traces_glove/learn_ef2048_c1000.trace"], "rc": 0, "seconds": 70.55903482437134}
+trace: 69.63 s
+{"cmd": ["build/bench/bench/ann/adaptive_eval", "trace", "/data/adaptive/glove_m16_efc200_s100.hnsw", "/data/adaptive/glove_val.fbin", "512", "250", "/data/adaptive/traces_glove/val_ef512_c250.trace"], "rc": 0, "seconds": 1.6741657257080078}
+trace: 1.01 s
+{"cmd": ["build/bench/bench/ann/adaptive_eval", "trace", "/data/adaptive/glove_m16_efc200_s100.hnsw", "/data/adaptive/glove_val.fbin", "512", "500", "/data/adaptive/traces_glove/val_ef512_c500.trace"], "rc": 0, "seconds": 1.5586340427398682}
+trace: 0.98 s
+{"cmd": ["build/bench/bench/ann/adaptive_eval", "trace", "/data/adaptive/glove_m16_efc200_s100.hnsw", "/data/adaptive/glove_val.fbin", "512", "1000", "/data/adaptive/traces_glove/val_ef512_c1000.trace"], "rc": 0, "seconds": 1.57621431350708}
+trace: 1.01 s
+{"cmd": ["build/bench/bench/ann/adaptive_eval", "trace", "/data/adaptive/glove_m16_efc200_s100.hnsw", "/data/adaptive/glove_val.fbin", "1024", "250", "/data/adaptive/traces_glove/val_ef1024_c250.trace"], "rc": 0, "seconds": 2.305347204208374}
+trace: 1.77 s
+{"cmd": ["build/bench/bench/ann/adaptive_eval", "trace", "/data/adaptive/glove_m16_efc200_s100.hnsw", "/data/adaptive/glove_val.fbin", "1024", "500", "/data/adaptive/traces_glove/val_ef1024_c500.trace"], "rc": 0, "seconds": 2.4955806732177734}
+trace: 1.93 s
+{"cmd": ["build/bench/bench/ann/adaptive_eval", "trace", "/data/adaptive/glove_m16_efc200_s100.hnsw", "/data/adaptive/glove_val.fbin", "1024", "1000", "/data/adaptive/traces_glove/val_ef1024_c1000.trace"], "rc": 0, "seconds": 2.344698190689087}
+trace: 1.78 s
+{"cmd": ["build/bench/bench/ann/adaptive_eval", "trace", "/data/adaptive/glove_m16_efc200_s100.hnsw", "/data/adaptive/glove_val.fbin", "2048", "250", "/data/adaptive/traces_glove/val_ef2048_c250.trace"], "rc": 0, "seconds": 3.740830659866333}
+trace: 3.21 s
+{"cmd": ["build/bench/bench/ann/adaptive_eval", "trace", "/data/adaptive/glove_m16_efc200_s100.hnsw", "/data/adaptive/glove_val.fbin", "2048", "500", "/data/adaptive/traces_glove/val_ef2048_c500.trace"], "rc": 0, "seconds": 3.649324655532837}
+trace: 3.13 s
+{"cmd": ["build/bench/bench/ann/adaptive_eval", "trace", "/data/adaptive/glove_m16_efc200_s100.hnsw", "/data/adaptive/glove_val.fbin", "2048", "1000", "/data/adaptive/traces_glove/val_ef2048_c1000.trace"], "rc": 0, "seconds": 3.803507089614868}
+trace: 3.26 s
+{"cmd": ["build/bench/bench/ann/adaptive_eval", "trace", "/data/adaptive/glove_m16_efc200_s100.hnsw", "/data/adaptive/glove_test.fbin", "512", "250", "/data/adaptive/traces_glove/test_ef512_c250.trace"], "rc": 0, "seconds": 1.4379680156707764}
+trace: 0.92 s
+{"cmd": ["build/bench/bench/ann/adaptive_eval", "trace", "/data/adaptive/glove_m16_efc200_s100.hnsw", "/data/adaptive/glove_test.fbin", "512", "500", "/data/adaptive/traces_glove/test_ef512_c500.trace"], "rc": 0, "seconds": 1.5032014846801758}
+trace: 0.96 s
+{"cmd": ["build/bench/bench/ann/adaptive_eval", "trace", "/data/adaptive/glove_m16_efc200_s100.hnsw", "/data/adaptive/glove_test.fbin", "512", "1000", "/data/adaptive/traces_glove/test_ef512_c1000.trace"], "rc": 0, "seconds": 1.470381498336792}
+trace: 0.93 s
+{"cmd": ["build/bench/bench/ann/adaptive_eval", "trace", "/data/adaptive/glove_m16_efc200_s100.hnsw", "/data/adaptive/glove_test.fbin", "1024", "250", "/data/adaptive/traces_glove/test_ef1024_c250.trace"], "rc": 0, "seconds": 2.2802810668945312}
+trace: 1.73 s
+{"cmd": ["build/bench/bench/ann/adaptive_eval", "trace", "/data/adaptive/glove_m16_efc200_s100.hnsw", "/data/adaptive/glove_test.fbin", "1024", "500", "/data/adaptive/traces_glove/test_ef1024_c500.trace"], "rc": 0, "seconds": 2.265796184539795}
+trace: 1.72 s
+{"cmd": ["build/bench/bench/ann/adaptive_eval", "trace", "/data/adaptive/glove_m16_efc200_s100.hnsw", "/data/adaptive/glove_test.fbin", "1024", "1000", "/data/adaptive/traces_glove/test_ef1024_c1000.trace"], "rc": 0, "seconds": 2.303227186203003}
+trace: 1.74 s
+{"cmd": ["build/bench/bench/ann/adaptive_eval", "trace", "/data/adaptive/glove_m16_efc200_s100.hnsw", "/data/adaptive/glove_test.fbin", "2048", "250", "/data/adaptive/traces_glove/test_ef2048_c250.trace"], "rc": 0, "seconds": 4.4268105030059814}
+trace: 3.88 s
+{"cmd": ["build/bench/bench/ann/adaptive_eval", "trace", "/data/adaptive/glove_m16_efc200_s100.hnsw", "/data/adaptive/glove_test.fbin", "2048", "500", "/data/adaptive/traces_glove/test_ef2048_c500.trace"], "rc": 0, "seconds": 4.084757566452026}
+trace: 3.54 s
+{"cmd": ["build/bench/bench/ann/adaptive_eval", "trace", "/data/adaptive/glove_m16_efc200_s100.hnsw", "/data/adaptive/glove_test.fbin", "2048", "1000", "/data/adaptive/traces_glove/test_ef2048_c1000.trace"], "rc": 0, "seconds": 4.284827470779419}
+trace: 3.69 s

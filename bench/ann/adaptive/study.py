@@ -66,6 +66,15 @@ def read_fbin(path):
     return np.fromfile(path, dtype=np.float32, offset=8).reshape(n, d)
 
 
+def model_queries(split):
+    """Query vectors exactly as the C++ model sees them: normalized for cosine (the search
+    normalizes each query before the layer-0 search)."""
+    q = read_fbin(fbin(split))
+    if METRIC == "cosine":
+        q = q / np.maximum(np.linalg.norm(q, axis=1, keepdims=True), 1e-30)
+    return q.astype(np.float32)
+
+
 def read_gt(split):
     path = DATA / f"{DS}_{split}.gt"
     nq, k = np.fromfile(path, dtype=np.uint64, count=2).astype(int)
@@ -316,7 +325,7 @@ def stage_select(run_dir):
     log = run_dir / "select.log"
     learn_gt, _ = read_gt("learn")
     val_gt, val_gt_d = read_gt("val")
-    Ql, Qv = read_fbin(fbin("learn")), read_fbin(fbin("val"))
+    Ql, Qv = model_queries("learn"), model_queries("val")
     models_dir = run_dir / "models"
     models_dir.mkdir(exist_ok=True)
     sim, chosen = [], {}
@@ -516,7 +525,7 @@ def stage_report(run_dir):
             fpath = DATA / "val_features.f32"
             X = t["features"][t["valid"]]
             if s["use_query"]:
-                X = np.hstack([X, read_fbin(fbin("val"))[t["valid"]]])
+                X = np.hstack([X, model_queries("val")[t["valid"]]])
             X.astype(np.float32).tofile(fpath)
             out = subprocess.run([TOOL, "overhead", str(run_dir / "models" / f"{s['model']}.txt"),
                                   str(fpath), "20"], capture_output=True, text=True, check=True)
@@ -567,7 +576,7 @@ def stage_stress(run_dir):
         sh([TOOL, "build", str(fbin("base")), str(idx), "16", "200", "101"], log)
     sel = json.loads((run_dir / "selection.json").read_text())["chosen"]
     gt_ids, _ = read_gt("test")
-    Qt = read_fbin(fbin("test"))
+    Qt = model_queries("test")
     out = {"index_sha256": sha256(idx)}
     for r in TARGETS:
         for method in ["learned", "cap"]:

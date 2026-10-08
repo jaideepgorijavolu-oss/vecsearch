@@ -1,0 +1,84 @@
+linear_ef512_c250: val R^2(log T) 0.5811
+gbdt_ef512_c250: val R^2(log T) 0.6541
+linear_q_ef512_c250: val R^2(log T) 0.6310
+gbdt_q_ef512_c250: val R^2(log T) 0.6948
+linear_ef512_c500: val R^2(log T) 0.6734
+gbdt_ef512_c500: val R^2(log T) 0.7513
+linear_q_ef512_c500: val R^2(log T) 0.7034
+gbdt_q_ef512_c500: val R^2(log T) 0.7729
+linear_ef512_c1000: val R^2(log T) 0.7382
+gbdt_ef512_c1000: val R^2(log T) 0.8137
+linear_q_ef512_c1000: val R^2(log T) 0.7592
+gbdt_q_ef512_c1000: val R^2(log T) 0.8251
+linear_ef1024_c250: val R^2(log T) 0.5855
+gbdt_ef1024_c250: val R^2(log T) 0.6542
+linear_q_ef1024_c250: val R^2(log T) 0.6387
+gbdt_q_ef1024_c250: val R^2(log T) 0.7019
+linear_ef1024_c500: val R^2(log T) 0.6758
+gbdt_ef1024_c500: val R^2(log T) 0.7496
+linear_q_ef1024_c500: val R^2(log T) 0.7094
+gbdt_q_ef1024_c500: val R^2(log T) 0.7746
+linear_ef1024_c1000: val R^2(log T) 0.7380
+gbdt_ef1024_c1000: val R^2(log T) 0.8136
+linear_q_ef1024_c1000: val R^2(log T) 0.7627
+gbdt_q_ef1024_c1000: val R^2(log T) 0.8288
+linear_ef2048_c250: val R^2(log T) 0.5804
+gbdt_ef2048_c250: val R^2(log T) 0.6437
+linear_q_ef2048_c250: val R^2(log T) 0.6337
+gbdt_q_ef2048_c250: val R^2(log T) 0.6937
+linear_ef2048_c500: val R^2(log T) 0.6711
+gbdt_ef2048_c500: val R^2(log T) 0.7416
+linear_q_ef2048_c500: val R^2(log T) 0.7060
+gbdt_q_ef2048_c500: val R^2(log T) 0.7688
+linear_ef2048_c1000: val R^2(log T) 0.7299
+gbdt_ef2048_c1000: val R^2(log T) 0.8092
+linear_q_ef2048_c1000: val R^2(log T) 0.7565
+gbdt_q_ef2048_c1000: val R^2(log T) 0.8263
+{"cmd": ["build/bench/bench/ann/adaptive_eval", "run", "/data/adaptive/glove_m16_efc200_s100.hnsw", "/data/adaptive/glove_val.fbin", "/data/adaptive/runs_glove/val_sweep/configs.txt", "0", "/data/adaptive/runs_glove/val_sweep"], "rc": 0, "seconds": 203.77623009681702}
+pass 0/0 done
+{"cmd": ["build/bench/bench/ann/adaptive_eval", "run", "/data/adaptive/glove_m16_efc200_s100.hnsw", "/data/adaptive/glove_val.fbin", "/data/adaptive/runs_glove/val_fixed_evals/configs.txt", "0", "/data/adaptive/runs_glove/val_fixed_evals"], "rc": 0, "seconds": 94.33356428146362}
+pass 0/0 done
+{"cmd": ["build/bench/bench/ann/adaptive_eval", "run", "/data/adaptive/glove_m16_efc200_s100.hnsw", "/data/adaptive/glove_val.fbin", "/data/adaptive/runs_glove/val_confirm/configs.txt", "0", "/data/adaptive/runs_glove/val_confirm"], "rc": 0, "seconds": 25.32028555870056}
+pass 0/0 done
+linear_ef512_c250: val R^2(log T) 0.5811
+gbdt_ef512_c250: val R^2(log T) 0.6541
+linear_q_ef512_c250: val R^2(log T) 0.6356
+gbdt_q_ef512_c250: val R^2(log T) 0.6894
+linear_ef512_c500: val R^2(log T) 0.6734
+gbdt_ef512_c500: val R^2(log T) 0.7513
+linear_q_ef512_c500: val R^2(log T) 0.7100
+gbdt_q_ef512_c500: val R^2(log T) 0.7717
+linear_ef512_c1000: val R^2(log T) 0.7382
+gbdt_ef512_c1000: val R^2(log T) 0.8137
+linear_q_ef512_c1000: val R^2(log T) 0.7647
+gbdt_q_ef512_c1000: val R^2(log T) 0.8238
+linear_ef1024_c250: val R^2(log T) 0.5855
+gbdt_ef1024_c250: val R^2(log T) 0.6542
+linear_q_ef1024_c250: val R^2(log T) 0.6370
+gbdt_q_ef1024_c250: val R^2(log T) 0.6918
+linear_ef1024_c500: val R^2(log T) 0.6758
+gbdt_ef1024_c500: val R^2(log T) 0.7496
+linear_q_ef1024_c500: val R^2(log T) 0.7116
+gbdt_q_ef1024_c500: val R^2(log T) 0.7715
+linear_ef1024_c1000: val R^2(log T) 0.7380
+gbdt_ef1024_c1000: val R^2(log T) 0.8136
+linear_q_ef1024_c1000: val R^2(log T) 0.7653
+gbdt_q_ef1024_c1000: val R^2(log T) 0.8291
+linear_ef2048_c250: val R^2(log T) 0.5804
+gbdt_ef2048_c250: val R^2(log T) 0.6437
+linear_q_ef2048_c250: val R^2(log T) 0.6282
+gbdt_q_ef2048_c250: val R^2(log T) 0.6829
+linear_ef2048_c500: val R^2(log T) 0.6711
+gbdt_ef2048_c500: val R^2(log T) 0.7416
+linear_q_ef2048_c500: val R^2(log T) 0.7057
+gbdt_q_ef2048_c500: val R^2(log T) 0.7668
+linear_ef2048_c1000: val R^2(log T) 0.7299
+gbdt_ef2048_c1000: val R^2(log T) 0.8092
+linear_q_ef2048_c1000: val R^2(log T) 0.7574
+gbdt_q_ef2048_c1000: val R^2(log T) 0.8267
+{"cmd": ["build/bench/bench/ann/adaptive_eval", "run", "/data/adaptive/glove_m16_efc200_s100.hnsw", "/data/adaptive/glove_val.fbin", "/data/adaptive/runs_glove/val_sweep/configs.txt", "0", "/data/adaptive/runs_glove/val_sweep"], "rc": 0, "seconds": 206.1572277545929}
+pass 0/0 done
+{"cmd": ["build/bench/bench/ann/adaptive_eval", "run", "/data/adaptive/glove_m16_efc200_s100.hnsw", "/data/adaptive/glove_val.fbin", "/data/adaptive/runs_glove/val_fixed_evals/configs.txt", "0", "/data/adaptive/runs_glove/val_fixed_evals"], "rc": 0, "seconds": 94.78482103347778}
+pass 0/0 done
+{"cmd": ["build/bench/bench/ann/adaptive_eval", "run", "/data/adaptive/glove_m16_efc200_s100.hnsw", "/data/adaptive/glove_val.fbin", "/data/adaptive/runs_glove/val_confirm/configs.txt", "0", "/data/adaptive/runs_glove/val_confirm"], "rc": 0, "seconds": 26.102834939956665}
+pass 0/0 done

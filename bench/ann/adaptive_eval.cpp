@@ -244,7 +244,6 @@ int overhead(char** a) {
   return 0;
 }
 
-
 // Multithreaded throughput: all queries in one call on `threads` threads, best of `reps` runs.
 // Prints one JSON line per config. Results must equal the single-thread ones (checked).
 int batch(char** a) {
@@ -254,9 +253,9 @@ int batch(char** a) {
   const std::size_t reps = std::stoul(a[3]), threads = std::stoul(a[4]);
   for (const Config& c : configs) {
     auto search = [&](std::size_t t) {
-      return c.kind == "fixed" ? index->search(q.data.data(), q.n, kK, c.p.ef, t)
-                               : index->search_adaptive(q.data.data(), q.n, kK, c.p, nullptr,
-                                                        nullptr, t);
+      return c.kind == "fixed"
+                 ? index->search(q.data.data(), q.n, kK, c.p.ef, t)
+                 : index->search_adaptive(q.data.data(), q.n, kK, c.p, nullptr, nullptr, t);
     };
     const SearchResult serial = search(1);
     double best = 1e300;
@@ -266,9 +265,10 @@ int batch(char** a) {
       best = std::min(best, seconds_since(t0));
       if (got.ids != serial.ids) throw std::runtime_error("parallel != serial: " + c.name);
     }
-    std::printf("{\"name\": \"%s\", \"threads\": %zu, \"reps\": %zu, \"best_seconds\": %.6f, "
-                "\"qps\": %.1f}
-", c.name.c_str(), threads, reps, best, q.n / best);
+    std::printf(
+        "{\"name\": \"%s\", \"threads\": %zu, \"reps\": %zu, \"best_seconds\": %.6f, "
+        "\"qps\": %.1f}\n",
+        c.name.c_str(), threads, reps, best, q.n / best);
   }
   return 0;
 }

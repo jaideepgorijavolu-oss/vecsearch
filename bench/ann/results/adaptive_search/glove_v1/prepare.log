@@ -1,0 +1,23 @@
+{
+ "train_rows": 1183514,
+ "base": 1083514,
+ "learn_sampled": 100000,
+ "learn_kept": 100000,
+ "learn_dropped_equal_to_query": 0,
+ "learn_dropped_equal_to_base": 0,
+ "learn_dropped_duplicate_within": 0,
+ "queries_identical_to_a_base_row": 0,
+ "duplicate_rows_within_10k_queries": 0,
+ "zero_norm_rows": {
+  "base": 0,
+  "learn": 0,
+  "test": 0
+ },
+ "val": 5000,
+ "test": 5000
+}
+{"build_seconds": 458.131322, "threads": 1, "max_level": 5, "memory_bytes": 717531126}
+{"snapshot": "glove_m16_efc200_s100.hnsw", "sha256": "e5a7ca8addf699723ca6577877191fb98a09eff9266b48c0d4082c3c0789a840"}
+{"split": "learn", "gt_seconds": 934.123358, "threads": 16, "queries": 100000}
+{"split": "val", "gt_seconds": 47.388028, "threads": 16, "queries": 5000}
+{"split": "test", "gt_seconds": 47.077849, "threads": 16, "queries": 5000}
